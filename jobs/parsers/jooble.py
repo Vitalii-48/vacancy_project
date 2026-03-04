@@ -3,7 +3,6 @@
 import requests
 from decouple import config
 from datetime import datetime, timedelta
-from jobs.models import Vacancy
 
 
 def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remote"):
@@ -56,9 +55,6 @@ def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remo
                 continue
 
             results.append({"title": title, "link": link, "company": company, "location": 'Віддалено'})
-
-        if results:
-            Vacancy.save_to_db("Jooble.ua", results)
 
         return results
 

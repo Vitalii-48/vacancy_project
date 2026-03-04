@@ -1,7 +1,7 @@
 # jobs\parsers\robota.py
+
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
-from jobs.models import Vacancy
 import dateparser
 
 def fetch_robota():
@@ -94,9 +94,6 @@ def fetch_robota():
 
         job_page.close()
         browser.close()
-
-    if results:
-        Vacancy.save_to_db("Robota.ua", results)
 
     return results
 

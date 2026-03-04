@@ -5,7 +5,6 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
-from jobs.models import Vacancy
 import time
 
 def fetch_work():
@@ -80,9 +79,6 @@ def fetch_work():
 
         # Якщо всі перевірки пройдено — додаємо в результат
         results.append({"title": title, "link": link, "company": company, "location": 'Дистанційно'})
-
-    if results:
-        Vacancy.save_to_db("Work.ua", results)
 
     return results
 

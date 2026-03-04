@@ -3,7 +3,6 @@
 import feedparser
 from urllib.parse import urlparse
 from datetime import datetime, timedelta
-from jobs.models import Vacancy
 
 def fetch_dou_rss():
     """Скрапер вакансій Junior Python developer (віддалена робота) з DOU.ua через feedparser"""
@@ -40,9 +39,6 @@ def fetch_dou_rss():
             "link": entry.link,
             "location": 'Віддалено'
         })
-
-    if results:
-        Vacancy.save_to_db("DOU.ua", results)
 
     return results
 
