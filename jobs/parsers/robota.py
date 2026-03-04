@@ -1,6 +1,7 @@
 # jobs\parsers\robota.py
 from datetime import datetime, timedelta
 from playwright.sync_api import sync_playwright
+from jobs.models import Vacancy
 import dateparser
 
 def fetch_robota():
@@ -17,7 +18,6 @@ def fetch_robota():
         )
         page = context.new_page()
 
-        print(f"🌐 Відкриваю сторінку...")
         page.goto(url)  # Чекаємо завершення мережевої активності
         page.wait_for_load_state("domcontentloaded")
         # Додаткове очікування для рендерингу карток
@@ -90,33 +90,15 @@ def fetch_robota():
             if not is_remote:
                 continue
 
-            results.append({"title": title, "link": link, "company": company})
+            results.append({"title": title, "link": link, "company": company, "location": 'Віддалена робота'})
 
         job_page.close()
         browser.close()
 
+    if results:
+        Vacancy.save_to_db("Robota.ua", results)
+
     return results
-
-def save_job_to_db():
-    """Запис знайдених вакансій на Robota.ua в базу даних"""
-    from jobs.models import Vacancy
-
-    jobs = fetch_robota()
-    saved = []
-    for job in jobs:
-        vacancy, created = Vacancy.objects.get_or_create(
-            link=job["link"],
-            defaults={
-                'title': job["title"],
-                'company': job["company"],
-                'location': 'Віддалена робота',
-                'source': 'Robota.ua',
-                'is_sent': False
-            }
-        )
-        if created:
-            saved.append(vacancy)
-    return saved
 
 
 if __name__ == "__main__":

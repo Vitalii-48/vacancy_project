@@ -1,15 +1,13 @@
 # jobs\parsers\jooble.py
 
-import os
 import requests
 from decouple import config
 from datetime import datetime, timedelta
-
+from jobs.models import Vacancy
 
 
 def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remote"):
     """Скрапер вакансій Junior Python developer (за замовчуванням) (Дистанційно) з API Jooble."""
-
 
     if api_key is None:
         from django.conf import settings
@@ -57,7 +55,10 @@ def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remo
             if "python" not in title and "python" not in snippet:
                 continue
 
-            results.append({"title": title, "link": link, "company": company})
+            results.append({"title": title, "link": link, "company": company, "location": 'Віддалено'})
+
+        if results:
+            Vacancy.save_to_db("Jooble.ua", results)
 
         return results
 
@@ -65,26 +66,7 @@ def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remo
         print(f"❌ Помилка: {e}")
         return []
 
-def save_job_to_db():
-    """Запис знайдених вакансій з API Jooble в базу даних"""
-    from jobs.models import Vacancy
 
-    jobs = fetch_joobl()
-    saved = []
-    for job in jobs:
-        vacancy, created = Vacancy.objects.get_or_create(
-            link=job["link"],
-            defaults={
-                'title': job.get("title"),
-                'company': job.get("company"),
-                'location': job.get('location', 'Remote'),
-                'source': 'Jooble',
-                'is_sent': False
-            }
-        )
-        if created:
-            saved.append(vacancy)
-    return saved
 
 
 if __name__ == "__main__":

@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
+from jobs.models import Vacancy
 import time
 
 def fetch_work():
@@ -80,30 +81,11 @@ def fetch_work():
         # Якщо всі перевірки пройдено — додаємо в результат
         results.append({"title": title, "link": link, "company": company, "location": 'Дистанційно'})
 
+    if results:
+        Vacancy.save_to_db("Work.ua", results)
+
     return results
 
-
-def save_work_to_db():
-    """Запис знайдених вакансій на Robota.ua в базу даних"""
-    from jobs.models import Vacancy
-
-    works = fetch_work()
-    saved = []
-    for work in works:
-
-        vacancy, created = Vacancy.objects.get_or_create(
-            link=work["link"],
-            defaults={
-                'title': work["title"],
-                'company': work["company"],
-                'location': 'Дистанційно',
-                'source': 'Work.ua',
-                'is_sent': False
-            }
-        )
-        if created:
-            saved.append(vacancy)
-    return saved
 
 
 if __name__ == "__main__":
