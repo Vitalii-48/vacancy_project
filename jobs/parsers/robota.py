@@ -35,7 +35,7 @@ def fetch_robota():
         job_page = context.new_page()
 
         # Параметри фільтрації
-        cutoff_date = datetime.now() - timedelta(days=30)
+        cutoff_date = datetime.now() - timedelta(days=7)
         remote_keywords = ["дистанційно", "віддалено", "remote"]
 
         for  card in cards:

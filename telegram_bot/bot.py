@@ -19,7 +19,7 @@ bot = telebot.TeleBot(config("TELEGRAM_BOT_TOKEN"))
 
 @bot.message_handler(commands=["vacancies"])
 def send_vacancies(message):
-    vacancies = Vacancy.objects.order_by("-created_at")[:5]
+    vacancies = Vacancy.objects.order_by("-created_at")
     print(f"DEBUG: Знайдено вакансій: {vacancies.count()}")
 
     for v in vacancies:
@@ -59,6 +59,7 @@ def callback_apply(call):
         markup.add(types.InlineKeyboardButton("🔄 Скасувати відгук", callback_data=f"unapply_{vacancy.id}"))
 
     bot.edit_message_text(new_text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+
 @bot.message_handler(commands=["applied"])
 def mark_applied(message):
     try:

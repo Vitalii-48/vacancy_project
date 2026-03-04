@@ -22,8 +22,8 @@ def fetch_dou_rss():
         company = company_name.title()
         pub_date = entry.published
 
-        # 2. Фільтр по даті (не старіші за 30 днів)
-        cutoff_date = datetime.now() - timedelta(days=30)
+        # 2. Фільтр по даті (не старіші за 7 днів)
+        cutoff_date = datetime.now() - timedelta(days=7)
 
         try:
             updated_dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=None)

@@ -23,7 +23,7 @@ def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remo
         results = []
 
         # Параметри фільтрації
-        cutoff_date = datetime.now() - timedelta(days=30)
+        cutoff_date = datetime.now() - timedelta(days=7)
 
         for job in jobs:
             # 1. Пошук основних тегів
@@ -34,7 +34,7 @@ def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remo
             updated_str = job["updated"].split("T")[0]
 
 
-            # 2. Фільтр по даті (не старіші за 30 днів)
+            # 2. Фільтр по даті (не старіші за 7 днів)
             try:
                 updated_dt = datetime.fromisoformat(updated_str)
 

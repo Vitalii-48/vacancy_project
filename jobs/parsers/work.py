@@ -24,7 +24,8 @@ def fetch_work():
     driver.quit()
 
     # Параметри фільтрації
-    cutoff_date = datetime.now() - timedelta(days=30)
+    cutoff_date = datetime.now() - timedelta(days=7
+                                             )
     remote_keywords = ["дистанційно", "віддалено", "віддалена", "remote"]
 
     results = []
