@@ -1,6 +1,6 @@
 # vacancy_project
 
-Проєкт для збору вакансій з різних джерел (Jooble, Robota.ua, Work.ua) та надсилання їх через Telegram-бота.
+Проєкт для збору вакансій з різних джерел (Jooble, Robota.ua, Work.ua, DOU.ua) та надсилання їх через Telegram-бота.
 
 ---
 
@@ -15,6 +15,7 @@
 `python manage.py run_jooble`
 `python manage.py run_robota`
 `python manage.py run_work`
+`python manage.py run_dou`
 Або всі одразу:
 `python manage.py run_all`
 
@@ -38,12 +39,14 @@ vacancy_project/                # Головна директорія проєк
 │   │       ├── __init__.py
 │   │       ├── run_all.py
 │   │       ├── run_bot.py
+│   │       ├── run_dou.py
 │   │       ├── run_jooble.py
 │   │       ├── run_robota.py
 │   │       └── run_work.py
 │   ├── migrations/             # Міграції БД
 │   ├── parsers/                # Парсери для різних сайтів
 │   │   ├── __init__.py
+│   │   ├── dou.py
 │   │   ├── indeed.py
 │   │   ├── jooble.py
 │   │   ├── robota.py
