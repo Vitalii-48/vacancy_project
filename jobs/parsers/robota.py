@@ -5,6 +5,7 @@ from playwright.sync_api import sync_playwright
 import dateparser
 
 def fetch_robota():
+
     """Скрапер вакансій Junior Python developer (Віддалена робота) з Robota.ua через Playwright"""
 
     url = "https://robota.ua/ua/zapros/junior-python-developer/ukraine/params;scheduleIds=3;rubrics=1"
