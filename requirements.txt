@@ -9,3 +9,4 @@ playwright~=1.58.0
 Django~=6.0.2
 pyTelegramBotAPI~=4.31.0
 gunicorn
+psycopg2-binary
