@@ -2,9 +2,6 @@
 .venv/
 venv/
 
-# База даних SQLite
-vacancy_sqlite3.db
-
 # IDE файли
 .vscode/
 .idea/

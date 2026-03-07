@@ -7,7 +7,7 @@
 ## 🚀 Запуск проєкту
 
 ### 1. Міграції
-Перед першим запуском потр ібно створити таблиці в базі даних:
+Перед першим запуском потрібно створити таблиці в базі даних:
 `python manage.py migrate`
 
 ### 2. Запуск парсерів
@@ -18,53 +18,71 @@
 `python manage.py run_dou`
 Або всі одразу:
 `python manage.py run_all`
+(Також запустити пасери можна натиснувши кнопку на admin-панелі)
 
 ### 3. Запуск Telegram-бота
 `python manage.py run_bot`
 
 ## ⚙️ Налаштування
-- Використовується SQLite (vacancy_sqlite3.db) як база даних.
+- Використовується PostgreSQL як база даних.
 - API‑ключ для Jooble зберігається у .env файлі:
 JOOBLE_API_KEY=your_api_key_here
-- Для роботи Telegram‑бота потрібен токен:
+- Для роботи Telegram‑бота токен:
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 
 📂 Структура проєкт
 vacancy_project/                # Головна директорія проєкту
-├── .venv/                      # Віртуальне середовище
+│
 ├── jobs/                       # Django app для роботи з вакансіями
+│   ├── admin.py                # Адмінка Django
+│   ├── models.py               # Моделі БД
+│   ├── views.py                # В’юхи
+│   ├── __init__.py
+│   │
 │   ├── management/
 │   │   ├── __init__.py
 │   │   └── commands/           # Кастомні команди manage.py
-│   │       ├── __init__.py
 │   │       ├── run_all.py
 │   │       ├── run_bot.py
 │   │       ├── run_dou.py
 │   │       ├── run_jooble.py
 │   │       ├── run_robota.py
-│   │       └── run_work.py
+│   │       ├── run_work.py
+│   │       └── __init__.py
+│   │
 │   ├── migrations/             # Міграції БД
-│   ├── parsers/                # Парсери для різних сайтів
-│   │   ├── __init__.py
-│   │   ├── dou.py
-│   │   ├── indeed.py
-│   │   ├── jooble.py
-│   │   ├── robota.py
-│   │   └── work.py
-│   ├── admin.py                # Адмінка Django
-│   ├── models.py               # Моделі БД
-│   ├── views.py                # В’юхи
-│   └── __init__.py
+│   │
+│   └── parsers/                # Парсери для різних сайтів
+│       ├── dou.py
+│       ├── indeed.py
+│       ├── jooble.py
+│       ├── robota.py
+│       ├── work.py
+│       └── __init__.py
+│
 ├── telegram_bot/               # Логіка телеграм-бота
 │   └── bot.py
+│
+├── templates/
+│   └── admin/
+│       └── jobs/
+│           └── vacancy/
+│               └── change_list.html
+│
 ├── utils/                      # Допоміжні утиліти
+│
 ├── vacancy_project/            # Конфігурація Django-проєкту
-│   ├── __init__.py
 │   ├── settings.py             # Налаштування
 │   ├── urls.py                 # Маршрути
-│   └── wsgi.py                 # Точка входу для серверів
+│   ├── wsgi.py                 # Точка входу для серверів
+│   └── __init__.py
 ├── .env                        # Секрети/налаштування середовища
 ├── .gitignore                  # Ігноровані файли для Git
 ├── manage.py                   # Головний скрипт Django
-├── README                      # Документація
-└── vacancy_sqlite3.db          # SQLite база даних
+├── Procfile                    # # Інструкції для Render
+└── README                      # Документація
+
+## 🌐 Деплой
+
+Додаток доступний за адресою:  
+[https://vacancy-project.onrender.com](https://vacancy-project.onrender.com)

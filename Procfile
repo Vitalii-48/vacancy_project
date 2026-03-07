@@ -1,0 +1,1 @@
+web: gunicorn vacancy_project.wsgi
