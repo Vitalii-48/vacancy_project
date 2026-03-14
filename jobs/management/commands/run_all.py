@@ -22,8 +22,16 @@ class Command(BaseCommand):
             self.stdout.write(f"⏳ Звертаюсь до {source_name}...")
             jobs = fetch_func()
             if jobs:  # ✅ тільки якщо є вакансії
-                Vacancy.save_to_db(source_name, jobs)
-                self.stdout.write(self.style.SUCCESS(f"✅ Збережено {len(jobs)} вакансій з {source_name}"))
+                saved = Vacancy.save_to_db(source_name, jobs)
+                if saved:
+                    self.stdout.write(self.style.SUCCESS(
+                        f"✅ Збережено {len(saved)} нових вакансій з {source_name}"
+                    ))
+                else:
+                    self.stdout.write(self.style.WARNING(
+                        f"⚠️ Усі {len(jobs)} вакансій з {source_name} вже були в базі"
+                    ))
+
             else:
                 self.stdout.write(self.style.WARNING(f"⚠️ Нічого не знайдено на {source_name}"))
 

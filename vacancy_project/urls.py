@@ -3,12 +3,10 @@
 from django.contrib import admin
 from django.urls import path
 from django.shortcuts import redirect
-
-# Функція для перенаправлення
-def redirect_to_admin(request):
-    return redirect('admin/')
+from .views import guest_login
 
 urlpatterns = [
-    path('', redirect_to_admin), # Пустий який веде в адмінку
+    path('', lambda request: redirect('/admin/')),
     path('admin/', admin.site.urls),
+    path('demo/', guest_login, name='guest_login')
 ]
