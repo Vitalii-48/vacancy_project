@@ -84,5 +84,10 @@ vacancy_project/                # Головна директорія проєк
 
 ## 🌐 Деплой
 
-Додаток доступний за адресою:  
-[https://vacancy-project.onrender.com](https://vacancy-project.onrender.com)
+Додаток доступний за адресами:
+
+- **Admin доступ**: [https://vacancy-project.onrender.com/](https://vacancy-project.onrender.com/)  
+  (для входу потрібен акаунт адміністратора)
+
+- **Guest доступ**: [https://vacancy-project.onrender.com/demo/](https://vacancy-project.onrender.com/demo/)  
+  (автоматичний вхід під гостьовим користувачем)
