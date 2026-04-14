@@ -25,9 +25,8 @@ def fetch_robota():
         try:
             page.wait_for_selector("a.new-design-card", timeout=20000)
 
-        except:
-            print("❌ Картки вакансій не знайдено або заблоковано Cloudflare.")
-            browser.close()
+        except Exception as e:
+            print("❌ Картки вакансій не знайдено або заблоковано Cloudflare.", e)
             return []
 
         cards = page.query_selector_all("a.new-design-card")
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     if not jobs:
         print("Нічого не знайдено за вашими критеріями.")
     else:
-        print("Вивидимо список")
+        print("Виводимо список")
         for i, job in enumerate(jobs, 1):
             print(f"\n[{i}] {job['title']}")
             print(f"🏢 Компанія: {job['company']}")

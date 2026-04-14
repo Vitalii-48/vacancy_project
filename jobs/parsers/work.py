@@ -24,8 +24,7 @@ def fetch_work():
     driver.quit()
 
     # Параметри фільтрації
-    cutoff_date = datetime.now() - timedelta(days=7
-                                             )
+    cutoff_date = datetime.now() - timedelta(days=7)
     remote_keywords = ["дистанційно", "віддалено", "віддалена", "remote"]
 
     results = []
@@ -38,7 +37,8 @@ def fetch_work():
         title_tag = card.select_one("h2 a")
         time_tag = card.select_one("time")
         snippet_tag = card.select_one("p.ellipsis")
-        company_tag = card.select_one("div.mt-xs span.strong-600")
+        company_tag = (card.select_one("div.mt-xs span.strong-600")
+                       or card.select_one("div.mt-xs a"))
 
         if not title_tag or not time_tag:
             continue
@@ -50,7 +50,7 @@ def fetch_work():
         company = company_tag.get_text(strip=True) if company_tag else "Невідомо"
         title_low = title.lower()
 
-        # 2. Фільтр по даті (не старіші за 30 днів)
+        # 2. Фільтр по даті (не старіші за 7 днів)
         try:
             updated_dt = datetime.strptime(time_tag["datetime"], "%Y-%m-%d %H:%M:%S")
             if updated_dt < cutoff_date:
@@ -60,8 +60,8 @@ def fetch_work():
 
         # 3. Фільтр по рівню (Junior vs Middle/Senior)
         # Якщо в тексті немає 'junior', перевіряємо, чи немає там 'middle/senior'
-        if "junior" not in title_low and "junior" not in snippet:
-            if any(lvl in title_low or lvl in snippet for lvl in ["middle", "senior", "lead"]):
+        if "junior" not in title_low and "junior" not in snippet.lower():
+            if any(lvl in title_low or lvl in snippet.lower() for lvl in ["middle", "senior", "lead"]):
                 continue
 
         # 4. Фільтр по стеку (Python)
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     if not works:
         print("Нічого не знайдено за вашими критеріями.")
     else:
-        print("Вивидимо список")
+        print("Виводимо список")
         for i, work in enumerate(works, 1):
             print(f"\n[{i}] {work['title']}")
             print(f"🏢 Компанія: {work['company']}")

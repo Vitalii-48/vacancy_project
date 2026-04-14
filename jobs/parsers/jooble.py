@@ -73,7 +73,7 @@ if __name__ == "__main__":
     if not jobs:
         print("Нічого не знайдено за вашими критеріями.")
     else:
-        print("Вивидимо список")
+        print("Виводимо список")
         for i, job in enumerate(jobs, 1):
             print(f"\n[{i}] {job['title']}")
             print(f"🏢 Компанія: {job['company']}")
