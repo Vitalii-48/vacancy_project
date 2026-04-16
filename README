@@ -1,47 +1,72 @@
 # vacancy_project
 
-Проєкт для збору вакансій з різних джерел (Jooble, Robota.ua, Work.ua, DOU.ua) та надсилання їх через Telegram-бота.
+A Django-based project for aggregating job vacancies from multiple sources (Jooble, Robota.ua, Work.ua, DOU.ua) and sending them via a Telegram bot.
 
 ---
 
-## 🚀 Запуск проєкту
+## 🚀 Getting Started
 
-### 1. Міграції
-Перед першим запуском потрібно створити таблиці в базі даних:
-`python manage.py migrate`
+### 1. Run Migrations
 
-### 2. Запуск парсерів
-Кожен пасер можна запускати окремо
-`python manage.py run_jooble`
-`python manage.py run_robota`
-`python manage.py run_work`
-`python manage.py run_dou`
-Або всі одразу:
-`python manage.py run_all`
-(Також запустити пасери можна натиснувши кнопку на admin-панелі)
+Before the first launch, create the database tables:
 
-### 3. Запуск Telegram-бота
-`python manage.py run_bot`
+```bash
+python manage.py migrate
+```
 
-## ⚙️ Налаштування
-- Використовується PostgreSQL як база даних.
-- API‑ключ для Jooble зберігається у .env файлі:
+### 2. Run Scrapers
+
+Each scraper can be run individually:
+
+```bash
+python manage.py run_jooble
+python manage.py run_robota
+python manage.py run_work
+python manage.py run_dou
+```
+
+Or all at once:
+
+```bash
+python manage.py run_all
+```
+
+> Scrapers can also be triggered via a button in the admin panel.
+
+### 3. Run Telegram Bot
+
+```bash
+python manage.py run_bot
+```
+
+---
+
+## ⚙️ Configuration
+
+- PostgreSQL is used as the database.
+- Jooble API key is stored in the `.env` file:
+
+```env
 JOOBLE_API_KEY=your_api_key_here
-- Для роботи Telegram‑бота токен:
 TELEGRAM_BOT_TOKEN=your_bot_token_here
+```
 
-📂 Структура проєкт
-vacancy_project/                # Головна директорія проєкту
+---
+
+## 📂 Project Structure
+
+```
+vacancy_project/                # Main project directory
 │
-├── jobs/                       # Django app для роботи з вакансіями
-│   ├── admin.py                # Адмінка Django
-│   ├── models.py               # Моделі БД
-│   ├── views.py                # В’юхи
+├── jobs/                       # Django app for vacancy management
+│   ├── admin.py                # Django admin
+│   ├── models.py               # Database models
+│   ├── views.py                # Views
 │   ├── __init__.py
 │   │
 │   ├── management/
 │   │   ├── __init__.py
-│   │   └── commands/           # Кастомні команди manage.py
+│   │   └── commands/           # Custom manage.py commands
 │   │       ├── run_all.py
 │   │       ├── run_bot.py
 │   │       ├── run_dou.py
@@ -50,9 +75,9 @@ vacancy_project/                # Головна директорія проєк
 │   │       ├── run_work.py
 │   │       └── __init__.py
 │   │
-│   ├── migrations/             # Міграції БД
+│   ├── migrations/             # Database migrations
 │   │
-│   └── parsers/                # Парсери для різних сайтів
+│   └── parsers/                # Scrapers for each job board
 │       ├── dou.py
 │       ├── indeed.py
 │       ├── jooble.py
@@ -60,7 +85,7 @@ vacancy_project/                # Головна директорія проєк
 │       ├── work.py
 │       └── __init__.py
 │
-├── telegram_bot/               # Логіка телеграм-бота
+├── telegram_bot/               # Telegram bot logic
 │   └── bot.py
 │
 ├── templates/
@@ -69,25 +94,28 @@ vacancy_project/                # Головна директорія проєк
 │           └── vacancy/
 │               └── change_list.html
 │
-├── utils/                      # Допоміжні утиліти
+├── utils/                      # Helper utilities
 │
-├── vacancy_project/            # Конфігурація Django-проєкту
-│   ├── settings.py             # Налаштування
-│   ├── urls.py                 # Маршрути
-│   ├── wsgi.py                 # Точка входу для серверів
+├── vacancy_project/            # Django project configuration
+│   ├── settings.py             # Settings
+│   ├── urls.py                 # URL routing
+│   ├── wsgi.py                 # WSGI entry point
 │   └── __init__.py
-├── .env                        # Секрети/налаштування середовища
-├── .gitignore                  # Ігноровані файли для Git
-├── manage.py                   # Головний скрипт Django
-├── Procfile                    # # Інструкції для Render
-└── README                      # Документація
+│
+├── .env                        # Secrets / environment variables
+├── .gitignore                  # Git ignore rules
+├── manage.py                   # Django management script
+├── Procfile                    # Render deployment instructions
+└── README.md                   # Documentation
+```
 
-## 🌐 Деплой
+---
 
-Додаток доступний за адресами:
+## 🌐 Deployment
 
-- **Admin доступ**: [https://vacancy-project.onrender.com/](https://vacancy-project.onrender.com/)  
-  (для входу потрібен акаунт адміністратора)
+The app is available at:
 
-- **Guest доступ**: [https://vacancy-project.onrender.com/demo/](https://vacancy-project.onrender.com/demo/)  
-  (автоматичний вхід під гостьовим користувачем)
+- **Admin access**: [https://vacancy-project.onrender.com/](https://vacancy-project.onrender.com/)
+  *(requires an administrator account)*
+- **Guest access**: [https://vacancy-project.onrender.com/demo/](https://vacancy-project.onrender.com/demo/)
+  *(automatic login as a guest user)*
