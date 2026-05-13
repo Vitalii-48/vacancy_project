@@ -6,7 +6,7 @@ class Vacancy(models.Model):
     title = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
     location = models.CharField(max_length=255, default="Remote")
-    link = models.URLField()
+    link = models.URLField(unique=True)
     source = models.CharField(max_length=50)  # Jooble, Indeed, etc.
     created_at = models.DateTimeField(auto_now_add=True)
     applied = models.BooleanField(default=False)  # чи відгукнувся

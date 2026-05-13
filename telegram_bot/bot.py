@@ -100,7 +100,10 @@ def show_vacancies(call):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("apply_") or call.data.startswith("unapply_"))
 def callback_apply(call):
     vacancy_id = int(call.data.split("_")[1])
-    vacancy = Vacancy.objects.get(id=vacancy_id)
+    vacancy = Vacancy.objects.filter(id=vacancy_id).first()
+    if vacancy is None:
+        bot.answer_callback_query(call.id, "Вакансію вже видалено або не знайдено.")
+        return
 
     if call.data.startswith("apply_"):
         vacancy.applied = True

@@ -1,4 +1,4 @@
-# vacancy_project\settings.pyfrom pathlib import Path
+# vacancy_project\settings.py
 
 from decouple import config
 from pathlib import Path
@@ -10,7 +10,7 @@ SECRET_KEY = config("V_SECRET_KEY")
 DEBUG = config("DEBUG", default=False, cast=bool)
 JOOBLE_API_KEY = config("JOOBLE_API_KEY")
 
-ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="*").split(",")
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="localhost,127.0.0.1").split(",")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

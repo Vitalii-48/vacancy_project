@@ -14,13 +14,14 @@ class VacancyAdmin(admin.ModelAdmin):
     list_filter = ("applied", "source")
     list_editable = ("applied", "is_sent")
     search_fields = ("title", "company")
+    change_list_template = "admin/jobs/vacancy/change_list.html"
 
-    def  get_urls(self):
+    def get_urls(self):
         urls = super().get_urls()
-        coustom_urls = [
+        custom_urls = [
             path("run-parsers/", self.admin_site.admin_view(self.run_parsers)),
         ]
-        return coustom_urls + urls
+        return custom_urls + urls
 
     def run_parsers(self, request):
         # Функція-обгортка для запуску команди
