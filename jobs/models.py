@@ -8,9 +8,10 @@ class Vacancy(models.Model):
     location = models.CharField(max_length=255, default="Remote")
     link = models.URLField(unique=True)
     source = models.CharField(max_length=50)  # Jooble, Indeed, etc.
-    created_at = models.DateTimeField(auto_now_add=True)
     applied = models.BooleanField(default=False)  # чи відгукнувся
-    is_sent = models.BooleanField(default=False) # чи відправлено у Telegram
+    is_irrelevant = models.BooleanField(default=False) # чи відправлено у Telegram
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     def __str__(self):
         return f"{self.title} @ {self.company}"

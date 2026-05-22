@@ -10,9 +10,9 @@ from .models import Vacancy
 
 @admin.register(Vacancy)
 class VacancyAdmin(admin.ModelAdmin):
-    list_display = ("title", "company", "location", "link", "source", "created_at", "applied",  "is_sent")
+    list_display = ("title", "company", "location", "link", "source", "applied",  "is_irrelevant", "created_at")
     list_filter = ("applied", "source")
-    list_editable = ("applied", "is_sent")
+    list_editable = ("applied", "is_irrelevant")
     search_fields = ("title", "company")
     change_list_template = "admin/jobs/vacancy/change_list.html"
 

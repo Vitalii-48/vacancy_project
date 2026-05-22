@@ -55,7 +55,7 @@ def choose_status(call):
 # --- Крок 3: показ вакансій ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("status_"))
 def show_vacancies(call):
-    _, source, status = call.data.split("_")
+    _, source, status = call.data.split("_", 2)
 
     # Фільтр по джерелу
     if source == "all":
@@ -67,7 +67,9 @@ def show_vacancies(call):
     if status == "applied":
         qs = qs.filter(applied=True)
     elif status == "unapplied":
-        qs = qs.filter(applied=False)
+        qs = qs.filter(applied=False, is_irrelevant=False)
+    else:
+        qs = qs.filter(is_irrelevant=False)
 
     vacancies = qs.order_by("-created_at")
 
@@ -85,11 +87,10 @@ def show_vacancies(call):
             f"{v.link}"
         )
         markup = types.InlineKeyboardMarkup()
-        if not v.applied:
-            markup.add(types.InlineKeyboardButton("✅ Відгукнутись", callback_data=f"apply_{v.id}"))
-        else:
-            markup.add(types.InlineKeyboardButton("🔄 Скасувати відгук", callback_data=f"unapply_{v.id}"))
-
+        markup.row(
+            types.InlineKeyboardButton("✅ Відгукнувся", callback_data=f"apply_{v.id}"),
+            types.InlineKeyboardButton("❌ Нерелевантна", callback_data=f"irrelevant_{v.id}"),
+        )
         # Кнопка повернення до меню
         markup.add(types.InlineKeyboardButton("🔄 Повернутись до вибору джерела", callback_data="back_to_source"))
 
@@ -97,38 +98,31 @@ def show_vacancies(call):
 
 
 # --- Apply / Unapply ---
-@bot.callback_query_handler(func=lambda call: call.data.startswith("apply_") or call.data.startswith("unapply_"))
+@bot.callback_query_handler(func=lambda call: call.data.startswith("apply_"))
 def callback_apply(call):
     vacancy_id = int(call.data.split("_")[1])
     vacancy = Vacancy.objects.filter(id=vacancy_id).first()
-    if vacancy is None:
-        bot.answer_callback_query(call.id, "Вакансію вже видалено або не знайдено.")
+    if not vacancy:
+        bot.answer_callback_query(call.id, "Вакансію не знайдено.")
         return
 
-    if call.data.startswith("apply_"):
-        vacancy.applied = True
-        vacancy.save()
-        bot.answer_callback_query(call.id, f"Вакансія {vacancy.title} відзначена як відгукнута ✅")
-    elif call.data.startswith("unapply_"):
-        vacancy.applied = False
-        vacancy.save()
-        bot.answer_callback_query(call.id, f"Вакансія {vacancy.title} повернена у статус ➖")
+    vacancy.applied = True
+    vacancy.save()
+    bot.answer_callback_query(call.id, f"✅ Відгукнувся на {vacancy.title}")
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
+# обробник кнопки "Нерелевантна"
+@bot.callback_query_handler(func=lambda call: call.data.startswith("irrelevant_"))
+def callback_irrelevant(call):
+    vacancy_id = int(call.data.split("_")[1])
+    vacancy = Vacancy.objects.filter(id=vacancy_id).first()
+    if not vacancy:
+        bot.answer_callback_query(call.id, "Вакансію не знайдено.")
+        return
 
-    # Оновлення повідомлення
-    new_text = (
-        f"{vacancy.id}. {vacancy.title} @ {vacancy.company} ({vacancy.location})\n"
-        f"Джерело: {vacancy.source}\n"
-        f"Статус: {'✅ Відгукнута' if vacancy.applied else '➖ Не відгукнута'}\n"
-        f"{vacancy.link}"
-    )
-    markup = types.InlineKeyboardMarkup()
-    if not vacancy.applied:
-        markup.add(types.InlineKeyboardButton("✅ Відгукнутись", callback_data=f"apply_{vacancy.id}"))
-    else:
-        markup.add(types.InlineKeyboardButton("🔄 Скасувати відгук", callback_data=f"unapply_{vacancy.id}"))
-    markup.add(types.InlineKeyboardButton("🔄 Повернутись до вибору джерела", callback_data="back_to_source"))
-
-    bot.edit_message_text(new_text, call.message.chat.id, call.message.message_id, reply_markup=markup)
+    vacancy.is_irrelevant = True
+    vacancy.save()
+    bot.answer_callback_query(call.id, "Відмічено як нерелевантна ❌")
+    bot.edit_message_reply_markup(call.message.chat.id, call.message.message_id, reply_markup=None)
 
 
 # --- Повернення до вибору джерела ---
@@ -139,60 +133,3 @@ def back_to_source(call):
 
 if __name__ == "__main__":
     bot.polling(none_stop=True)
-"""@bot.message_handler(commands=["vacancies"])
-def send_vacancies(message):
-    vacancies = Vacancy.objects.order_by("-created_at")
-    print(f"DEBUG: Знайдено вакансій: {vacancies.count()}")
-
-    for v in vacancies:
-        text = f"{v.id}. {v.title} @ {v.company} ({v.location}) {'✅' if v.applied else '➖'}\n{v.link}"
-
-        # створюємо inline‑кнопку
-        markup = types.InlineKeyboardMarkup()
-        if not v.applied:
-            markup.add(types.InlineKeyboardButton("✅ Відгукнутись", callback_data=f"apply_{v.id}"))
-        else:
-            markup.add(types.InlineKeyboardButton("🔄 Скасувати відгук", callback_data=f"unapply_{v.id}"))
-
-        bot.send_message(message.chat.id, text, reply_markup=markup)
-
-
-# обробка натискань на кнопки
-@bot.callback_query_handler(func=lambda call: call.data.startswith("apply_") or call.data.startswith("unapply_"))
-def callback_apply(call):
-    vacancy_id = int(call.data.split("_")[1])
-    vacancy = Vacancy.objects.get(id=vacancy_id)
-
-    if call.data.startswith("apply_"):
-        vacancy.applied = True
-        vacancy.save()
-        bot.answer_callback_query(call.id, f"Вакансія {vacancy.title} відзначена як відгукнута ✅")
-    elif call.data.startswith("unapply_"):
-        vacancy.applied = False
-        vacancy.save()
-        bot.answer_callback_query(call.id, f"Вакансія {vacancy.title} повернена у статус ➖")
-
-    # оновлюємо повідомлення з новим статусом
-    new_text = f"{vacancy.id}. {vacancy.title} @ {vacancy.company} ({vacancy.location}) {'✅' if vacancy.applied else '➖'}\n{vacancy.link}"
-    markup = types.InlineKeyboardMarkup()
-    if not vacancy.applied:
-        markup.add(types.InlineKeyboardButton("✅ Відгукнутись", callback_data=f"apply_{vacancy.id}"))
-    else:
-        markup.add(types.InlineKeyboardButton("🔄 Скасувати відгук", callback_data=f"unapply_{vacancy.id}"))
-
-    bot.edit_message_text(new_text, call.message.chat.id, call.message.message_id, reply_markup=markup)
-
-@bot.message_handler(commands=["applied"])
-def mark_applied(message):
-    try:
-        vacancy_id = int(message.text.split()[1])
-        vacancy = Vacancy.objects.get(id=vacancy_id)
-        vacancy.applied = True
-        vacancy.save()
-        bot.send_message(message.chat.id, f"Вакансія '{vacancy.title}' відзначена як відгукнута ✅")
-    except Exception:
-        bot.send_message(message.chat.id, "Помилка: вкажи ID вакансії після команди /applied")
-
-if __name__ == "__main__":
-    bot.polling(none_stop=True)
-"""
