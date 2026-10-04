@@ -1,50 +1,86 @@
-# jobs\parsers\dou.py
+import html
+from datetime import datetime
+from email.utils import parsedate_to_datetime
+from urllib.parse import urlparse
 
 import feedparser
-from urllib.parse import urlparse
-from datetime import datetime, timedelta
+import requests
 
-def fetch_dou_rss():
-    """Скрапер вакансій Junior Python developer (віддалена робота) з DOU.ua через feedparser"""
+from jobs.exceptions import ParserError
+from jobs.filters import is_junior_level, is_recent
 
-    # --- НАЛАШТУВАННЯ БРАУЗЕРА ---
-    url = "https://jobs.dou.ua/vacancies/feeds/?search=junior%20Python%20developer&exp=0-1&remote&descr=1&category=Python"
-    feed = feedparser.parse(url)
+# The site already filters: experience 1-3 years, remote, Python.
+URL = "https://jobs.dou.ua/vacancies/feeds/?exp=1-3&remote&category=Python"
+# DOU blocks the default "python-requests" name, so we look like a browser.
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
+    )
+}
+
+
+def _company_from_link(link: str) -> str:
+    """Take the company name from the link: /companies/<name>/vacancies/..."""
+    parts = urlparse(link).path.split("/")
+    return parts[2].title() if len(parts) > 2 and parts[2] else "Невідомо"
+
+
+def _parse_date(value: str) -> datetime | None:
+    """Turn the RSS date text into a datetime. Return None if it is broken."""
+    try:
+        return parsedate_to_datetime(value).replace(tzinfo=None)
+    except (TypeError, ValueError):
+        return None
+
+
+def fetch_dou_rss() -> list[dict]:
+    """Return a list of good vacancies from DOU.ua."""
+    # Download the feed. Any network problem becomes a ParserError.
+    try:
+        response = requests.get(URL, headers=HEADERS, timeout=15)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise ParserError("DOU: не вдалося отримати RSS") from e
+
+    feed = feedparser.parse(response.content)
+    # "bozo" means the feed is broken. Empty and broken is a real failure.
+    if feed.bozo and not feed.entries:
+        raise ParserError("DOU: RSS не вдалося розібрати")
 
     results = []
+
     for entry in feed.entries:
-        # 1. Пошук основних тегів
-        title_all = entry['title']
-        title = title_all.split('в')[0]
+        # The title looks like "Job name в Company": cut only the end part.
+        title = html.unescape(entry.get("title", "").rsplit(" в ", 1)[0]).strip()
+        link = entry.get("link", "")
+        if not title or not link:
+            continue  # skip broken entries
 
-        company_link = entry.link
-        company_name = urlparse(company_link).path.split("/")[2]  # після /companies/
-        company = company_name.title()
-        pub_date = entry.published
-
-        # 2. Фільтр по даті (не старіші за 7 днів)
-        cutoff_date = datetime.now() - timedelta(days=7)
-
-        try:
-            updated_dt = datetime.strptime(pub_date, "%a, %d %b %Y %H:%M:%S %z").replace(tzinfo=None)
-            if updated_dt < cutoff_date:
-                continue
-        except (ValueError, TypeError):
+        # Skip vacancies with a broken or old date.
+        published = _parse_date(entry.get("published", ""))
+        if published is None or not is_recent(published):
             continue
 
-        # Якщо всі перевірки пройдено — додаємо в результат
-        results.append({
-            "title": title,
-            "company": company,
-            "link": entry.link,
-            "location": 'Віддалено'
-        })
+        # Skip senior vacancies (we check only the title here).
+        if not is_junior_level(title):
+            continue
+
+        results.append(
+            {
+                "title": title,
+                "company": _company_from_link(link),
+                "link": link,
+                "location": "Віддалено",
+            }
+        )
 
     return results
 
 
 if __name__ == "__main__":
-    print("🚀 Пошук вакансій на DOU.ua...")
+    # Run this file directly to test the parser.
+    print("Пошук вакансій на DOU.ua...")
     jobs = fetch_dou_rss()
 
     if not jobs:
@@ -52,5 +88,5 @@ if __name__ == "__main__":
     else:
         for i, job in enumerate(jobs, 1):
             print(f"\n[{i}] {job['title']}")
-            print(f"🏢 Компанія: {job['company']}")
-            print(f"🔗 Посилання: {job['link']}")
+            print(f"Компанія: {job['company']}")
+            print(f"Посилання: {job['link']}")

@@ -1,80 +1,78 @@
-# jobs\parsers\jooble.py
+from datetime import datetime
 
 import requests
 from decouple import config
-from datetime import datetime, timedelta
+
+from jobs.exceptions import ParserError
+from jobs.filters import is_junior_level, is_python, is_recent
 
 
-def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remote"):
-    """Скрапер вакансій Junior Python developer (за замовчуванням) (Дистанційно) з API Jooble."""
-
+def fetch_joobl(api_key=None, keywords="Junior Python developer", location="Remote") -> list[dict]:
+    """Return a list of good vacancies from Jooble."""
+    # If no key is given, take it from Django settings.
     if api_key is None:
         from django.conf import settings
         api_key = settings.JOOBLE_API_KEY
+
     url = f"https://ua.jooble.org/api/{api_key}"
     payload = {"keywords": keywords, "location": location}
 
+    # Ask the API. Any problem becomes a ParserError.
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, timeout=15)
         response.raise_for_status()
-        data = response.json()
+        jobs = response.json().get("jobs", [])
+    except (requests.RequestException, ValueError):
+        # "from None" hides the original error: its text contains the API key.
+        raise ParserError("Jooble: не вдалося отримати дані з API") from None
 
-        jobs = data.get('jobs', [])
-        results = []
+    results = []
 
-        # Параметри фільтрації
-        cutoff_date = datetime.now() - timedelta(days=7)
+    for job in jobs:
+        # .get() does not crash if a field is missing.
+        title = job.get("title", "").strip()
+        snippet = job.get("snippet", "")
+        link = job.get("link", "")
+        updated = job.get("updated", "")
 
-        for job in jobs:
-            # 1. Пошук основних тегів
-            title = job["title"].lower()
-            snippet = job["snippet"].lower()
-            company = job["company"]
-            link = job["link"]
-            updated_str = job["updated"].split("T")[0]
+        if not title or not link:
+            continue  # skip broken records
 
+        # Take only the date part (before the "T").
+        try:
+            published = datetime.fromisoformat(updated.split("T")[0])
+        except ValueError:
+            continue
 
-            # 2. Фільтр по даті (не старіші за 7 днів)
-            try:
-                updated_dt = datetime.fromisoformat(updated_str)
+        if not is_recent(published):
+            continue
+        if not is_junior_level(title, snippet):
+            continue
+        # Jooble search is not exact, so we check for Python ourselves.
+        if not is_python(title, snippet):
+            continue
 
-                if updated_dt < cutoff_date:
-                    continue
+        results.append(
+            {
+                "title": title,
+                "link": link,
+                "company": job.get("company") or "Невідомо",
+                "location": "Віддалено",
+            }
+        )
 
-            except ValueError:
-                continue
-
-
-            # 3. Фільтр по рівню (Junior vs Middle/Senior)
-            if "junior" not in title and "junior" not in snippet:
-                if "middle" in title or "senior" in title or "middle" in snippet or "senior" in snippet:
-                    continue
-
-            # 4. Фільтр по стеку (Python)
-            if "python" not in title and "python" not in snippet:
-                continue
-
-            results.append({"title": title, "link": link, "company": company, "location": 'Віддалено'})
-
-        return results
-
-    except Exception as e:
-        print(f"❌ Помилка: {e}")
-        return []
-
-
+    return results
 
 
 if __name__ == "__main__":
-    api_key_jooble = config("JOOBLE_API_KEY")
-    print("🚀 Пошук вакансій на Jooble...")
-    jobs = fetch_joobl(api_key=api_key_jooble)
+    # Run this file directly to test the parser.
+    print("Пошук вакансій на Jooble...")
+    jobs = fetch_joobl(api_key=config("JOOBLE_API_KEY"))
 
     if not jobs:
         print("Нічого не знайдено за вашими критеріями.")
     else:
-        print("Виводимо список")
         for i, job in enumerate(jobs, 1):
             print(f"\n[{i}] {job['title']}")
-            print(f"🏢 Компанія: {job['company']}")
-            print(f"🔗 Посилання: {job['link']}")
+            print(f"Компанія: {job['company']}")
+            print(f"Посилання: {job['link']}")
