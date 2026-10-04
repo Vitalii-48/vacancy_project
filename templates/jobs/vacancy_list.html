@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Вакансії</h1>
+
+  {# Filter form: source and status. (Форма фільтрів: джерело і статус.) #}
+  <form method="get">
+    <select name="source">
+      {# Only registered users can choose "all sources". #}
+      {% if user.is_authenticated %}<option value="">Всі джерела</option>{% endif %}
+      {% for value, label in sources %}
+        <option value="{{ value }}" {% if value == source %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+
+    {# Status filter is a SEPARATE select, only for registered users. #}
+    {% if user.is_authenticated %}
+      <select name="status">
+        <option value="all" {% if status == "all" %}selected{% endif %}>Усі (без нерелевантних)</option>
+        <option value="applied" {% if status == "applied" %}selected{% endif %}>Відгукнуті</option>
+        <option value="unapplied" {% if status == "unapplied" %}selected{% endif %}>Не відгукнуті</option>
+        <option value="irrelevant" {% if status == "irrelevant" %}selected{% endif %}>Нерелевантні</option>
+      </select>
+    {% endif %}
+
+    <button type="submit">Показати</button>
+  </form>
+
+  {% if not user.is_authenticated %}
+    <p><a href="{% url 'register' %}">Зареєструйтесь</a>, щоб бачити всі джерела.</p>
+  {% endif %}
+
+  <ul>
+    {% for v in page_obj %}
+      <li>
+        <a href="{{ v.link }}" target="_blank" rel="noopener noreferrer">{{ v.title }}</a>
+        — {{ v.company }} ({{ v.get_source_display }}, {{ v.created_at|date:"d.m.Y" }})
+
+        {% if user.is_authenticated %}
+          {% if v.user_applied %}✅ Відгукнувся{% elif v.user_irrelevant %}❌ Нерелевантна{% endif %}
+          <form method="post" action="{% url 'set_status' v.id %}" style="display:inline">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button name="action" value="applied">Відгукнувся</button>
+            <button name="action" value="irrelevant">Нерелевантна</button>
+            <button name="action" value="reset">Скинути</button>
+          </form>
+        {% endif %}
+      </li>
+    {% empty %}
+      <li>Вакансій немає.</li>
+    {% endfor %}
+  </ul>
+
+  {# Pagination keeps the chosen filters. (Пагінація зберігає обрані фільтри.) #}
+  {% if page_obj.has_other_pages %}
+    <p>
+      {% if page_obj.has_previous %}
+        <a href="?source={{ source }}&status={{ status }}&page={{ page_obj.previous_page_number }}">← Назад</a>
+      {% endif %}
+      Сторінка {{ page_obj.number }} з {{ page_obj.paginator.num_pages }}
+      {% if page_obj.has_next %}
+        <a href="?source={{ source }}&status={{ status }}&page={{ page_obj.next_page_number }}">Далі →</a>
+      {% endif %}
+    </p>
+  {% endif %}
+{% endblock %}
