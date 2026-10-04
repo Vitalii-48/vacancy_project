@@ -1,39 +1,40 @@
 # vacancy_project
 
-A Django-based project for aggregating job vacancies from multiple sources (Jooble, Robota.ua, Work.ua, DOU.ua) and sending them via a Telegram bot.
+A Django project that collects junior Python job vacancies from several job sites and shows them in the admin panel. A Telegram bot can also show them.
+
+Sources: Jooble, Work.ua, DOU.ua. Robota.ua is disabled (see "Known limits").
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### 1. Run Migrations
+### 1. Install and configure
 
-Before the first launch, create the database tables:
+```bash
+pip install -r requirements.txt
+```
+
+Create a `.env` file (see "Configuration" below).
+
+### 2. Create the database tables
 
 ```bash
 python manage.py migrate
 ```
 
-### 2. Run Scrapers
+### 3. Run the scrapers
 
-Each scraper can be run individually:
-
-```bash
-python manage.py run_jooble
-python manage.py run_robota
-python manage.py run_work
-python manage.py run_dou
-```
-
-Or all at once:
+All sources at once:
 
 ```bash
 python manage.py run_all
 ```
 
-> Scrapers can also be triggered via a button in the admin panel.
+> Scrapers can also be started with the "Запустити парсери" button in the admin panel.
 
-### 3. Run Telegram Bot
+One broken source does not stop the others. Errors are written to the log.
+
+### 4. Run the Telegram bot
 
 ```bash
 python manage.py run_bot
@@ -41,77 +42,117 @@ python manage.py run_bot
 
 ---
 
-## ⚙️ Configuration
+##  Configuration
 
-- PostgreSQL is used as the database.
-- Jooble API key is stored in the `.env` file:
+PostgreSQL is used as the database. Secrets are stored in the `.env` file:
 
 ```env
+V_SECRET_KEY=your_django_secret_key
+DEBUG=False
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+DB_NAME=...
+DB_USER=...
+DB_PASSWORD=...
+DB_HOST=...
+DB_PORT=...
+
 JOOBLE_API_KEY=your_api_key_here
 TELEGRAM_BOT_TOKEN=your_bot_token_here
+
+USERNAME_GUEST=guest_username
+PASSWORD_GUEST=guest_password
 ```
+
+> Never commit `.env` to git.
+
+Work.ua is scraped with a real browser (Selenium), so Google Chrome must be installed on the machine.
 
 ---
 
-## 📂 Project Structure
+## Architecture
+
+Each layer does one job:
+
+| Layer | File | Job |
+|---|---|---|
+| Parsers | `jobs/parsers/*.py` | Get raw vacancies from a site. They never write to the database. |
+| Filters | `jobs/filters.py` | Shared rules: how old, junior or not, Python or not. |
+| Service | `jobs/services.py` | Business logic: save new vacancies in one transaction. |
+| Models | `jobs/models.py` | Database tables and indexes. |
+| Errors | `jobs/exceptions.py` | `ParserError` means "the site could not be read". An empty list means "nothing new". |
+| Commands | `jobs/management/commands/` | Entry points for `manage.py`. |
+
+### Filters
+
+- A vacancy must be at most 7 days old.
+- Level: the title is more important than the description. A junior word in the title is good, a senior word in the title is bad. If the title has no level, the description is checked. No level anywhere is also good.
+- Some sites already filter in the URL or API (DOU: experience, remote, Python. Work.ua: remote, Python). Those checks are not repeated in code.
+
+---
+
+##  Project Structure
 
 ```
 vacancy_project/                # Main project directory
 │
 ├── jobs/                       # Django app for vacancy management
 │   ├── admin.py                # Django admin
-│   ├── models.py               # Database models
+│   ├── models.py               # Vacancy, UserVacancy
+│   ├── services.py             # Saving vacancies (one transaction)
+│   ├── filters.py              # Shared filter rules
+│   ├── exceptions.py           # ParserError
 │   ├── views.py                # Views
-│   ├── __init__.py
 │   │
 │   ├── management/
-│   │   ├── __init__.py
-│   │   └── commands/           # Custom manage.py commands
-│   │       ├── run_all.py
-│   │       ├── run_bot.py
-│   │       ├── run_dou.py
-│   │       ├── run_jooble.py
-│   │       ├── run_robota.py
-│   │       ├── run_work.py
-│   │       └── __init__.py
+│   │   └── commands/
+│   │       ├── run_all.py      # Run all parsers
+│   │       └── run_bot.py      # Run the Telegram bot
 │   │
-│   ├── migrations/             # Database migrations
+│   ├── migrations/             # Database migrations (keep them in git)
 │   │
-│   └── parsers/                # Scrapers for each job board
-│       ├── dou.py
-│       ├── indeed.py
-│       ├── jooble.py
-│       ├── robota.py
-│       ├── work.py
-│       └── __init__.py
+│   └── parsers/                # One scraper per job site
+│       ├── dou.py              # RSS feed
+│       ├── jooble.py           # API
+│       ├── work.py             # Selenium
+│       ├── robota.py           # Playwright (disabled)
+│       └── indeed.py           # Not connected yet
 │
 ├── telegram_bot/               # Telegram bot logic
 │   └── bot.py
 │
 ├── templates/
-│   └── admin/
-│       └── jobs/
-│           └── vacancy/
-│               └── change_list.html
-│
-├── utils/                      # Helper utilities
+│   └── admin/jobs/vacancy/change_list.html
 │
 ├── vacancy_project/            # Django project configuration
-│   ├── settings.py             # Settings
-│   ├── urls.py                 # URL routing
-│   ├── wsgi.py                 # WSGI entry point
-│   └── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   ├── views.py                # Guest login
+│   └── wsgi.py
 │
-├── .env                        # Secrets / environment variables
-├── .gitignore                  # Git ignore rules
-├── manage.py                   # Django management script
-├── Procfile                    # Render deployment instructions
-└── README.md                   # Documentation
+├── .env                        # Secrets (not in git)
+├── manage.py
+├── Procfile                    # Render start command
+└── README
 ```
 
 ---
 
-## 🌐 Deployment
+##  Known limits
+
+- **Robota.ua is disabled.** Cloudflare asks "confirm you are human" and blocks the automatic browser.
+- **Indeed** has a parser file, but it is not connected to `run_all`.
+- Keyword filters cannot read the full text of a vacancy. A language-model check is planned for this.
+
+---
+
+## Deployment (Render)
+
+- Build Command: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+- Start command: see Procfile (gunicorn).
+- Django migrations are applied during the build, so the database tables are updated on each deploy.
+- Local and Render use the same Supabase PostgreSQL database, so be careful with deleting data.
+- Work.ua needs Chrome, which is usually not installed on Render. There this parser will report a `ParserError`, and the other sources still work.
 
 The app is available at:
 
