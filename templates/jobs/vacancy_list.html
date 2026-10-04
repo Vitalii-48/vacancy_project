@@ -25,6 +25,26 @@
     <button type="submit">Показати</button>
   </form>
 
+  {% if user.is_authenticated %}
+    <form method="post" action="{% url 'run_parse_all' %}">
+      {% csrf_token %}
+      <button type="submit">Оновити всі джерела</button>
+    </form>
+  {% endif %}
+
+  {% if source %}
+    <form method="post" action="{% url 'run_parse' %}">
+      {% csrf_token %}
+      <input type="hidden" name="source" value="{{ source }}">
+      <button type="submit">Оновити вакансії з {{ source }}</button>
+    </form>
+    {% if last_run %}
+      <p>
+        Останній запуск: {{ last_run.get_status_display }}, {{ last_run.created_at|date:"d.m.Y H:i" }}{% if last_run.status == "success" %}, нових: {{ last_run.new_count }}{% elif last_run.error %}, {{ last_run.error }}{% endif %}
+      </p>
+    {% endif %}
+  {% endif %}
+
   {% if not user.is_authenticated %}
     <p><a href="{% url 'register' %}">Зареєструйтесь</a>, щоб бачити всі джерела.</p>
   {% endif %}

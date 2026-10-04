@@ -1,40 +1,34 @@
+# jobs/management/commands/run_all.py
+# Command: run all parsers one after another.
+
 import logging
 
 from django.core.management.base import BaseCommand
 
-from jobs.parsers.jooble import fetch_joobl
-from jobs.parsers.robota import fetch_robota
-from jobs.parsers.work import fetch_work
-from jobs.parsers.dou import fetch_dou_rss
 from jobs.exceptions import ParserError
 from jobs.models import Vacancy
+from jobs.parsers.registry import PARSERS
 from jobs.services import ingest_vacancies
 
 logger = logging.getLogger(__name__)
 
-PARSERS = [
-    (Vacancy.Source.JOOBLE, fetch_joobl),
-    #(Vacancy.Source.ROBOTA, fetch_robota),  # Cloudflare blok
-    (Vacancy.Source.WORK, fetch_work),
-    (Vacancy.Source.DOU, fetch_dou_rss),
-]
 
 class Command(BaseCommand):
-    help = "Запуск усіх парсерів (Jooble, Robota.ua, Work.ua, DOU.ua)"
+    help = "Run all parsers"
 
     def handle(self, *args, **options):
-
-        for source, fetch in PARSERS:
-            self.stdout.write(f"Звертаюсь до {source}...")
+        for value, fetch in PARSERS.items():
+            label = Vacancy.Source(value).label
+            self.stdout.write(f"⏳ {label}...")
             try:
-                count = ingest_vacancies(source, fetch())
+                count = ingest_vacancies(value, fetch())
             except ParserError as e:
-                logger.error("Parser failed: %s: %s", source, e)
-                self.stdout.write(self.style.ERROR(f"{source.label}: {e}"))
+                # Expected failure: a short message is enough.
+                logger.error("Parser failed: %s: %s (cause: %r)", value, e, e.__cause__)
+                self.stdout.write(self.style.ERROR(f"{label}: {e}"))
                 continue
-            except Exception:
-                logger.exception("Unexpected error: %s", source)
-                self.stdout.write(self.style.ERROR(f"{source.label}: баг у коді, дивіться логи"))
+            except Exception:  # noqa: BLE001 - last safety net, one source must not stop the others
+                logger.exception("Unexpected error: %s", value)
+                self.stdout.write(self.style.ERROR(f"{label}: баг у коді, дивіться логи"))
                 continue
-            self.stdout.write(self.style.SUCCESS(f"{source.label}: {count} нових"))
-        self.stdout.write(self.style.SUCCESS("Усі парсери виконані"))
+            self.stdout.write(self.style.SUCCESS(f"{label}: {count} нових"))

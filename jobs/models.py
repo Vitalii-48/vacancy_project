@@ -64,3 +64,47 @@ class UserVacancy(models.Model):
 
     def __str__(self):
         return f"{self.user} → {self.vacancy}"
+
+
+class ParseRun(models.Model):
+    """One run of a parser. Used for status and for the cooldown."""
+
+    class Status(models.TextChoices):
+        RUNNING = "running", "Виконується"
+        SUCCESS = "success", "Успішно"
+        FAILED = "failed", "Помилка"
+
+    source = models.CharField(max_length=50, choices=Vacancy.Source.choices)
+    # Who started it. Empty for a guest. Keep the run if the user is deleted.
+    started_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="parse_runs",
+    )
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.RUNNING
+    )
+    days = models.PositiveSmallIntegerField(default=7)  # how many last days
+    keyword = models.CharField(max_length=50, blank=True)
+    new_count = models.PositiveIntegerField(default=0)  # new vacancies saved
+    # Short and safe text. Never put a technical error here.
+    error = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        # Fast search: "last run of this source".
+        indexes = [models.Index(fields=["source", "-created_at"])]
+        # At most ONE "running" row per source, checked by the database.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["source"],
+                condition=models.Q(status="running"),
+                name="one_running_parse_per_source",
+            ),
+        ]
+    def __str__(self):
+        return f"{self.source} {self.status} {self.created_at:%d.%m %H:%M}"

@@ -4,7 +4,9 @@
   <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
+    {# "next" sends the user back to the page they came from #}
     <input type="hidden" name="next" value="{{ next }}">
     <button type="submit">Увійти</button>
   </form>
+  <p>Немає акаунта? <a href="{% url 'register' %}">Зареєструватись</a></p>
 {% endblock %}

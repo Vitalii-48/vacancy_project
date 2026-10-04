@@ -2,8 +2,10 @@
 {% block content %}
   <h1>Реєстрація</h1>
   <form method="post">
+    {# CSRF token protects the form from forged requests #}
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">Зареєструватись</button>
   </form>
+  <p>Вже є акаунт? <a href="{% url 'login' %}">Увійти</a></p>
 {% endblock %}

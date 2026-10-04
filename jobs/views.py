@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.http import HttpResponseBadRequest
@@ -5,9 +6,10 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from .exceptions import ParseNotAllowed
 from .models import Vacancy
-from .selectors import VALID_STATUSES, get_available_sources, get_vacancies
-from .services import STATUS_FIELDS, set_vacancy_status
+from .selectors import VALID_STATUSES, get_available_sources, get_last_run, get_vacancies
+from .services import STATUS_FIELDS, set_vacancy_status, start_parse, start_parse_all
 
 
 def vacancy_list(request):
@@ -36,6 +38,7 @@ def vacancy_list(request):
         "sources": sources,
         "source": source,
         "status": status,
+        "last_run": get_last_run(source) if source else None,
     })
 
 
@@ -59,3 +62,29 @@ def set_status(request, vacancy_id):
     ):
         next_url = "home"
     return redirect(next_url)
+
+
+@require_POST
+def run_parse(request):
+    """Start parsing of one source. Allowed for guests too."""
+    source = request.POST.get("source", "")
+    try:
+        start_parse(request.user, source)
+    except ParseNotAllowed as e:
+        # The text is written by us, so it is safe to show.
+        messages.error(request, str(e))
+    else:
+        messages.success(request, "Парсинг запущено. Оновіть сторінку за хвилину.")
+    return redirect("home")
+
+
+@login_required
+@require_POST
+def run_parse_all(request):
+    """Start parsing of all sources. Only for logged-in users."""
+    started, skipped = start_parse_all(request.user)
+    if started:
+        messages.success(request, f"Запущено: {', '.join(started)}. Оновіть сторінку за хвилину.")
+    for text in skipped:
+        messages.warning(request, text)
+    return redirect("home")

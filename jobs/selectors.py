@@ -1,7 +1,6 @@
 from django.db.models import Exists, OuterRef
 
-from .models import UserVacancy, Vacancy
-
+from .models import UserVacancy, Vacancy, ParseRun
 
 # Allowed values of the status filter.
 VALID_STATUSES = {"all", "applied", "unapplied", "irrelevant"}
@@ -39,3 +38,8 @@ def get_available_sources() -> list[tuple[str, str]]:
     values = Vacancy.objects.order_by("source").values_list("source", flat=True).distinct()
     labels = dict(Vacancy.Source.choices)
     return [(value, labels.get(value, value)) for value in values]
+
+
+def get_last_run(source: str):
+    """Latest parse run of a source, or None."""
+    return ParseRun.objects.filter(source=source).first()
