@@ -1,6 +1,7 @@
 # vacancy_project
 
-A Django website that collects junior Python job vacancies from several job sites. Visitors can read them, registered users can filter them and track their own applications.
+A Django website that collects junior Python job vacancies from several job sites. 
+Visitors can read them, registered users can filter them and track their own applications.
 
 Sources: Jooble, Work.ua, DOU.ua. Robota.ua is disabled (see "Known limits").
 
@@ -34,27 +35,35 @@ Sources: Jooble, Work.ua, DOU.ua. Robota.ua is disabled (see "Known limits").
 pip install -r requirements.txt
 ```
 
-Create a `.env` file (see "Configuration").
+### 2. Create your `.env` file
 
-### 2. Create the database tables
+Copy the example file and fill in your own values (see "Configuration" below):
+
+```bash
+cp .env.example .env
+```
+
+On Windows PowerShell: `Copy-Item .env.example .env`
+
+### 3. Create the database tables
 
 ```bash
 python manage.py migrate
 ```
 
-### 3. Create an administrator
+### 4. Create an administrator
 
 ```bash
 python manage.py createsuperuser
 ```
 
-### 4. Run the site
+### 5. Run the site
 
 ```bash
 python manage.py runserver
 ```
 
-### 5. Run the scrapers from the command line (optional)
+### 6. Run the scrapers from the command line (optional)
 
 ```bash
 python manage.py run_all
@@ -62,7 +71,7 @@ python manage.py run_all
 
 One broken source does not stop the others. Errors are written to the log.
 
-### 6. Run the Telegram bot (optional)
+### 7. Run the Telegram bot (optional)
 
 ```bash
 python manage.py run_bot
@@ -89,10 +98,6 @@ JOOBLE_API_KEY=your_api_key_here
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 ```
 
-> Never commit `.env` to git.
-
-Work.ua is scraped with a real browser (Selenium), so Google Chrome must be installed on the machine.
-
 ---
 
 ##  Architecture
@@ -110,13 +115,15 @@ Each layer does one job:
 | Views | `jobs/views.py`, `accounts/views.py` | Take a request, return a page. They contain no business logic. |
 | Errors | `jobs/exceptions.py` | `ParserError`: a site could not be read. `ParseNotAllowed`: parsing cannot start now. |
 
-An empty list from a parser means "nothing new". A `ParserError` means "something broke".
 
 ### Filters
 
 - A vacancy must be at most 7 days old.
-- Level: the title is more important than the description. A junior word in the title is good, a senior word in the title is bad. If the title has no level, the description is checked. No level anywhere is also good.
-- Some sites already filter in the URL or API (DOU: experience, remote, Python. Work.ua: remote, Python). Those checks are not repeated in code.
+- Level: the title is more important than the description. A junior word in the title is good, 
+  a senior word in the title is bad. If the title has no level, the description is checked. 
+  No level anywhere is also good.
+- Some sites already filter in the URL or API (DOU: experience, remote, Python. Work.ua: remote, Python). 
+  Those checks are not repeated in code.
 
 ---
 
@@ -164,9 +171,10 @@ vacancy_project/
 │   ├── urls.py
 │   └── wsgi.py
 │
-├── .env                        # Secrets (not in git)
+├── .env                        # Real secrets (not in git)
+├── .env.example                # Placeholder secrets values
 ├── manage.py
-├── Procfile                    # Render start command
+├── Procfile                    # Start command for Heroku-style hosts (Render uses its own Start Command)
 └── README.md
 ```
 
@@ -176,10 +184,12 @@ vacancy_project/
 
 - **Robota.ua is disabled.** Cloudflare asks "confirm you are human" and blocks the automatic browser.
 - **Indeed** has a parser file, but it is not connected.
-- **Work.ua needs Chrome.** It is usually not installed on Render, so there this parser reports an error and the other sources still work.
+- **Work.ua needs Chrome.** It is usually not installed on Render, so there this parser reports an error 
+    and the other sources still work.
 - **Telegram bot** still uses the old shared statuses on `Vacancy`, not the personal `UserVacancy` statuses.
 - Keyword filters cannot read the full text of a vacancy.
-- Parsing runs in a background thread. A server restart can interrupt a run (such a run is closed automatically after 15 minutes).
+- Parsing runs in a background thread. A server restart can interrupt a run 
+  (such a run is closed automatically after 15 minutes).
 
 ---
 
@@ -193,11 +203,27 @@ vacancy_project/
 
 ---
 
-##  Deployment (Render)
+##  Deployment (Render, free plan)
 
-- **Start command:** see `Procfile` (gunicorn).
-- Build Command: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
-- Behind the Render proxy the settings use `SECURE_PROXY_SSL_HEADER` and `CSRF_TRUSTED_ORIGINS`, otherwise forms fail with a CSRF error.
-- Local and Render use the same Supabase PostgreSQL database, so be careful with deleting data.
+The site runs as a Render **Web Service** on the free plan. It is connected to this GitHub repository (branch `master`). 
+Every commit starts a new deploy automatically (Auto-Deploy: On Commit).
+
+### Service settings
+
+| Setting | Value |
+|---|---|
+| Build Command | `pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput` |
+| Start Command | `gunicorn vacancy_project.wsgi` |
+
+- **Build Command** installs packages, applies database migrations and collects static files (served by WhiteNoise). 
+    Migrations run on every deploy, so tables are always up to date.
+- **Start Command** starts the web server.
+
+### Environment variables
+
+Set these in the Render dashboard (Environment). Never put real values in git.
+
+`V_SECRET_KEY`, `DEBUG` (`False`), `ALLOWED_HOSTS`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, 
+`JOOBLE_API_KEY`, `TELEGRAM_BOT_TOKEN`
 
 Live site: [https://vacancy-project.onrender.com/](https://vacancy-project.onrender.com/)
