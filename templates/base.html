@@ -1,8 +1,11 @@
+{% load static %}
 <!doctype html>
 <html lang="uk">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Vacancy{% endblock %}</title>
+  <link rel="icon" href="{% static 'img/favicon-site.svg' %}" type="image/svg+xml">
   <style>
     table { border-collapse: collapse; width: 100%; }
     th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; vertical-align: top; }

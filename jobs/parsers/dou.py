@@ -7,7 +7,7 @@ import feedparser
 import requests
 
 from jobs.exceptions import ParserError
-from jobs.filters import is_junior_level, is_recent
+from jobs.filters import MAX_AGE_DAYS, is_junior_level, is_recent
 
 # The site already filters: experience 1-3 years, remote, Python.
 URL = "https://jobs.dou.ua/vacancies/feeds/?exp=1-3&remote&category=Python"
@@ -34,7 +34,7 @@ def _parse_date(value: str) -> datetime | None:
         return None
 
 
-def fetch_dou_rss() -> list[dict]:
+def fetch_dou_rss(days: int = MAX_AGE_DAYS) -> list[dict]:
     """Return a list of good vacancies from DOU.ua."""
     # Download the feed. Any network problem becomes a ParserError.
     try:
@@ -59,11 +59,11 @@ def fetch_dou_rss() -> list[dict]:
 
         # Skip vacancies with a broken or old date.
         published = _parse_date(entry.get("published", ""))
-        if published is None or not is_recent(published):
+        if published is None or not is_recent(published,days):
             continue
 
         # Skip senior vacancies (we check only the title here).
-        if not is_junior_level(title):
+        if not is_junior_level(str(title)):
             continue
 
         results.append(

@@ -1,0 +1,8 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{# Add the admin icon to the <head> of every admin page, including the login page #}
+{% block extrahead %}
+  {{ block.super }}
+  <link rel="icon" href="{% static 'img/favicon-admin.svg' %}" type="image/svg+xml">
+{% endblock %}

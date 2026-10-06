@@ -6,7 +6,7 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 
 from jobs.exceptions import ParserError
-from jobs.filters import is_junior_level, is_recent
+from jobs.filters import MAX_AGE_DAYS, is_junior_level, is_recent
 
 # The address already filters: remote jobs, Python.
 URL = "https://www.work.ua/jobs-remote-python/"
@@ -40,7 +40,7 @@ def _get_page_html() -> str:
         ) from e
 
 
-def fetch_work() -> list[dict]:
+def fetch_work(days: int = MAX_AGE_DAYS) -> list[dict]:
     """Return a list of good vacancies from Work.ua."""
     soup = BeautifulSoup(_get_page_html(), "html.parser")
 
@@ -74,7 +74,7 @@ def fetch_work() -> list[dict]:
         except (ValueError, TypeError):
             continue
 
-        if not is_recent(published):
+        if not is_recent(published, days):
             continue
         if not is_junior_level(title, snippet):
             continue
