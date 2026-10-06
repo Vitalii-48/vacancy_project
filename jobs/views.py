@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from .exceptions import ParseNotAllowed
 from .models import Vacancy
 from .selectors import VALID_STATUSES, get_available_sources, get_last_run, get_vacancies
-from .services import STATUS_FIELDS, set_vacancy_status, start_parse, start_parse_all
+from .services import DEFAULT_PERIOD, PERIODS, STATUS_FIELDS, set_vacancy_status, start_parse, start_parse_all
 
 
 def vacancy_list(request):
@@ -39,6 +39,8 @@ def vacancy_list(request):
         "source": source,
         "status": status,
         "last_run": get_last_run(source) if source else None,
+        "period_choices": [(key, label) for key, (label, _) in PERIODS.items()],
+        "default_period": DEFAULT_PERIOD,
     })
 
 
@@ -62,6 +64,14 @@ def set_status(request, vacancy_id):
     ):
         next_url = "home"
     return redirect(next_url)
+
+
+def _read_days(request) -> int:
+    """Turn the chosen period key from the form into a number of days."""
+    key = request.POST.get("period", DEFAULT_PERIOD)
+    if key not in PERIODS:
+        raise ParseNotAllowed("Невідомий період.")
+    return PERIODS[key][1]
 
 
 @require_POST

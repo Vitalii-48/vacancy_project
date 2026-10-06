@@ -2,17 +2,17 @@
 {% block content %}
   <h1>Вакансії</h1>
 
-  {# Filter form: source and status. (Форма фільтрів: джерело і статус.) #}
+  {# Filter form: source and status #}
   <form method="get">
     <select name="source">
-      {# Only registered users can choose "all sources". #}
+      {# Only registered users can choose "all sources" #}
       {% if user.is_authenticated %}<option value="">Всі джерела</option>{% endif %}
       {% for value, label in sources %}
         <option value="{{ value }}" {% if value == source %}selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
 
-    {# Status filter is a SEPARATE select, only for registered users. #}
+    {# Status filter is a SEPARATE select, only for registered users #}
     {% if user.is_authenticated %}
       <select name="status">
         <option value="all" {% if status == "all" %}selected{% endif %}>Усі (без нерелевантних)</option>
@@ -25,17 +25,33 @@
     <button type="submit">Показати</button>
   </form>
 
+  {# Parse all sources: only for logged-in users #}
   {% if user.is_authenticated %}
     <form method="post" action="{% url 'run_parse_all' %}">
       {% csrf_token %}
+      <label for="period-all">Період:</label>
+      <select name="period" id="period-all">
+        {% for key, label in period_choices %}
+          <option value="{{ key }}" {% if key == default_period %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
       <button type="submit">Оновити всі джерела</button>
     </form>
   {% endif %}
 
+  {# Parse one source: guests too, but only logged-in users choose the period #}
   {% if source %}
     <form method="post" action="{% url 'run_parse' %}">
       {% csrf_token %}
       <input type="hidden" name="source" value="{{ source }}">
+      {% if user.is_authenticated %}
+        <label for="period-one">Період:</label>
+        <select name="period" id="period-one">
+          {% for key, label in period_choices %}
+            <option value="{{ key }}" {% if key == default_period %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      {% endif %}
       <button type="submit">Оновити вакансії з {{ source }}</button>
     </form>
     {% if last_run %}
@@ -50,28 +66,56 @@
   {% endif %}
 
   <ul>
-    {% for v in page_obj %}
-      <li>
-        <a href="{{ v.link }}" target="_blank" rel="noopener noreferrer">{{ v.title }}</a>
-        — {{ v.company }} ({{ v.get_source_display }}, {{ v.created_at|date:"d.m.Y" }})
-
-        {% if user.is_authenticated %}
-          {% if v.user_applied %}✅ Відгукнувся{% elif v.user_irrelevant %}❌ Нерелевантна{% endif %}
-          <form method="post" action="{% url 'set_status' v.id %}" style="display:inline">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <button name="action" value="applied">Відгукнувся</button>
-            <button name="action" value="irrelevant">Нерелевантна</button>
-            <button name="action" value="reset">Скинути</button>
-          </form>
-        {% endif %}
-      </li>
-    {% empty %}
-      <li>Вакансій немає.</li>
-    {% endfor %}
+    {# Vacancies table. Status and buttons are only for logged-in users #}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Назва</th>
+            <th>Компанія</th>
+            <th>Локація</th>
+            <th>Джерело</th>
+            <th>Додано</th>
+            {% if user.is_authenticated %}
+              <th>Статус</th>
+              <th>Дії</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in page_obj %}
+            <tr>
+              <td><a href="{{ v.link }}" target="_blank" rel="noopener noreferrer">{{ v.title }}</a></td>
+              <td>{{ v.company }}</td>
+              <td>{{ v.location }}</td>
+              <td>{{ v.get_source_display }}</td>
+              <td>{{ v.created_at|date:"d.m.Y" }}</td>
+              {% if user.is_authenticated %}
+                <td>
+                  {% if v.user_applied %}✅ Відгукнувся{% elif v.user_irrelevant %}❌ Нерелевантна{% else %}—{% endif %}
+                </td>
+                <td>
+                  <form method="post" action="{% url 'set_status' v.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                    <button name="action" value="applied">Відгукнувся</button>
+                    <button name="action" value="irrelevant">Нерелевантна</button>
+                    <button name="action" value="reset">Скинути</button>
+                  </form>
+                </td>
+              {% endif %}
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="7">Вакансій немає.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </ul>
 
-  {# Pagination keeps the chosen filters. (Пагінація зберігає обрані фільтри.) #}
+  {# Pagination keeps the chosen filters #}
   {% if page_obj.has_other_pages %}
     <p>
       {% if page_obj.has_previous %}

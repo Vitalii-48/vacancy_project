@@ -3,6 +3,13 @@
 <head>
   <meta charset="utf-8">
   <title>{% block title %}Vacancy{% endblock %}</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; vertical-align: top; }
+    th { background: #f3f3f3; }
+    /* Wide table scrolls inside its own box, the page itself does not */
+    .table-wrap { overflow-x: auto; }
+  </style>
 </head>
 <body>
   <nav>

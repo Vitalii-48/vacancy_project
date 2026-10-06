@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 
 # Vacancies older than this many days are ignored.
 MAX_AGE_DAYS = 7
@@ -23,9 +23,11 @@ def _words(text: str) -> set[str]:
     return set(cleaned.split())
 
 
-def is_recent(published: datetime) -> bool:
-    """Return True if the vacancy is not older than MAX_AGE_DAYS days."""
-    return published >= datetime.now() - timedelta(days=MAX_AGE_DAYS)
+def is_recent(published: datetime, days: int = MAX_AGE_DAYS) -> bool:
+    """Return True if published on or after the start of the day `days` days ago.
+    days=0 means "today", days=1 means "yesterday and today"."""
+    start_of_today = datetime.combine(date.today(), time.min)
+    return published >= start_of_today - timedelta(days=days)
 
 
 def is_junior_level(title: str, snippet: str = "") -> bool:
