@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, date, time
 
 # Vacancies older than this many days are ignored.
-MAX_AGE_DAYS = 7
+DEFAULT_DAYS = 7
 
 # Words that mean "this job is for a beginner".
 JUNIOR_WORDS = {
@@ -19,15 +19,13 @@ SENIOR_WORDS = {
 def _words(text: str) -> set[str]:
     """Split text into separate lowercase words, without punctuation."""
     # Replace every symbol that is not a letter or a digit with a space.
-    cleaned = "".join(ch if ch.isalnum() else " " for ch in text.lower())
+    cleaned = "".join(ch if ch.isalpha() else " " for ch in text.lower())
     return set(cleaned.split())
 
 
-def is_recent(published: datetime, days: int = MAX_AGE_DAYS) -> bool:
-    """Return True if published on or after the start of the day `days` days ago.
-    days=0 means "today", days=1 means "yesterday and today"."""
-    start_of_today = datetime.combine(date.today(), time.min)
-    return published >= start_of_today - timedelta(days=days)
+def is_recent(published: datetime, days: int = DEFAULT_DAYS) -> bool:
+    """Return True if the vacancy was published within the last `days` days."""
+    return published.date() >= date.today() - timedelta(days=days)
 
 
 def is_junior_level(title: str, snippet: str = "") -> bool:

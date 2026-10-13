@@ -1,5 +1,4 @@
 import logging
-import math
 import threading
 from datetime import timedelta
 
@@ -7,7 +6,7 @@ from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
 from .exceptions import ParseNotAllowed, ParserError
-from .filters import MAX_AGE_DAYS as DEFAULT_DAYS
+from .filters import DEFAULT_DAYS
 from .models import ParseRun, UserVacancy, Vacancy
 from .parsers.registry import PARSERS
 
@@ -31,7 +30,9 @@ PERIODS = {
     "two_weeks": ("14 днів", 14),
     "month": ("Місяць (30 днів)", 30),
 }
-DEFAULT_PERIOD = "week"
+DEFAULT_PERIOD = next(
+    key for key, (_, period_days) in PERIODS.items() if period_days == DEFAULT_DAYS
+)
 ALLOWED_DAYS = {period_days for _, period_days in PERIODS.values()}
 
 
@@ -90,7 +91,7 @@ def start_parse(user, source: str, days: int = DEFAULT_DAYS) -> ParseRun:
 
     now = timezone.now()
 
-    # Dead runs would block the source forever, so close them first.
+    # Close stalled parse runs: a "running" row older than the limit is dead.
     closed = ParseRun.objects.filter(
         source=source,
         status=ParseRun.Status.RUNNING,
@@ -99,12 +100,12 @@ def start_parse(user, source: str, days: int = DEFAULT_DAYS) -> ParseRun:
     if closed:
         logger.warning("Closed stuck run(s) of %s", source)
 
-    # Cooldown: the last run of this source must be old enough.
+    # The last run of this source must be old enough.
     last = ParseRun.objects.filter(source=source).first()
     if last and last.created_at > now - PARSE_TIMEOUT:
         seconds = (last.created_at + PARSE_TIMEOUT - now).total_seconds()
         raise ParseNotAllowed(
-            f"Це джерело вже запускали нещодавно. Спробуйте через {math.ceil(seconds / 60)} хв."
+            f"Це джерело вже запускали нещодавно. Спробуйте через {int(seconds // 60 + 1)} хв."
         )
 
     # The database allows only one "running" row per source (see the constraint).
@@ -130,7 +131,7 @@ def _execute_run(run_id: int) -> None:
         # Our own message: safe to store and show.
         run.status = ParseRun.Status.FAILED
         run.error = str(e)[:255]
-    except Exception:  # noqa: BLE001 - a thread must never die silently
+    except Exception:
         logger.exception("Unexpected error in run %s", run_id)
         run.status = ParseRun.Status.FAILED
         run.error = "Внутрішня помилка"  # no technical details for the user
