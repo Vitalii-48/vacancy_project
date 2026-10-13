@@ -20,11 +20,8 @@ STATUS_FIELDS = {
     "reset": {"applied": False, "is_irrelevant": False},
 }
 
-# Pause between two runs of the same source.
-COOLDOWN = timedelta(minutes=10)
-
-# A run that stays "running" longer than this is considered dead (server restarted).
-STALE_AFTER = timedelta(minutes=15)
+# Ttime for parser to work.
+PARSE_TIMEOUT = timedelta(minutes=5)
 
 # Period choices: key -> (label shown to the user, number of days back).
 # Only these values are accepted, so nothing else can come from the form.
@@ -94,16 +91,18 @@ def start_parse(user, source: str, days: int = DEFAULT_DAYS) -> ParseRun:
     now = timezone.now()
 
     # Dead runs would block the source forever, so close them first.
-    ParseRun.objects.filter(
+    closed = ParseRun.objects.filter(
         source=source,
         status=ParseRun.Status.RUNNING,
-        created_at__lt=now - STALE_AFTER,
+        created_at__lt=now - PARSE_TIMEOUT,
     ).update(status=ParseRun.Status.FAILED, error="Timed out", finished_at=now)
+    if closed:
+        logger.warning("Closed stuck run(s) of %s", source)
 
     # Cooldown: the last run of this source must be old enough.
     last = ParseRun.objects.filter(source=source).first()
-    if last and last.created_at > now - COOLDOWN:
-        seconds = (last.created_at + COOLDOWN - now).total_seconds()
+    if last and last.created_at > now - PARSE_TIMEOUT:
+        seconds = (last.created_at + PARSE_TIMEOUT - now).total_seconds()
         raise ParseNotAllowed(
             f"Це джерело вже запускали нещодавно. Спробуйте через {math.ceil(seconds / 60)} хв."
         )

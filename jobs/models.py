@@ -17,7 +17,7 @@ class Vacancy(models.Model):
     location = models.CharField(max_length=255, default="Remote")
     # Link is unique, so the same vacancy is never saved twice.
     link = models.URLField(max_length=500, unique=True)
-    source = models.CharField(max_length=50, choices=Source.choices)
+    source = models.CharField(max_length=50, choices=Source)
     # Temporary: the Telegram bot still uses these two fields.
     # Later the statuses will live only in UserVacancy.
     applied = models.BooleanField(default=False)  # I already applied
@@ -74,7 +74,7 @@ class ParseRun(models.Model):
         SUCCESS = "success", "Успішно"
         FAILED = "failed", "Помилка"
 
-    source = models.CharField(max_length=50, choices=Vacancy.Source.choices)
+    source = models.CharField(max_length=50, choices=Vacancy.Source)
     # Who started it. Empty for a guest. Keep the run if the user is deleted.
     started_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -84,7 +84,7 @@ class ParseRun(models.Model):
         related_name="parse_runs",
     )
     status = models.CharField(
-        max_length=10, choices=Status.choices, default=Status.RUNNING
+        max_length=10, choices=Status, default=Status.RUNNING
     )
     days = models.PositiveSmallIntegerField(default=7)  # how many last days
     keyword = models.CharField(max_length=50, blank=True)
@@ -99,6 +99,7 @@ class ParseRun(models.Model):
         # Fast search: "last run of this source".
         indexes = [models.Index(fields=["source", "-created_at"])]
         # At most ONE "running" row per source, checked by the database.
+        # The string must match Status.RUNNING (Status is not visible inside Meta).
         constraints = [
             models.UniqueConstraint(
                 fields=["source"],
@@ -106,5 +107,6 @@ class ParseRun(models.Model):
                 name="one_running_parse_per_source",
             ),
         ]
+
     def __str__(self):
         return f"{self.source} {self.status} {self.created_at:%d.%m %H:%M}"
