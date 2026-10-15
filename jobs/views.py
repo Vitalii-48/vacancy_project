@@ -16,12 +16,12 @@ def vacancy_list(request):
     sources = get_available_sources()
     valid = {value for value, _ in sources}
 
-    # Never trust the URL: accept only known sources.
+    # Accept only known sources.
     source = request.GET.get("source", "")
     if source not in valid:
         source = ""
 
-    # Same rule for status: only known values.
+    # Accept only known values.
     status = request.GET.get("status", "all")
     if status not in VALID_STATUSES:
         status = "all"

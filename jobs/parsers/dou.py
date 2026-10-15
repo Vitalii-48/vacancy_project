@@ -44,7 +44,7 @@ def fetch_dou_rss(days: int = DEFAULT_DAYS) -> list[dict]:
         raise ParserError("DOU: не вдалося отримати RSS") from e
 
     feed = feedparser.parse(response.content)
-    # "bozo" means the feed is broken. Empty and broken is a real failure.
+    # "bozo" check: ensure the stream is neither corrupted nor empty
     if feed.bozo and not feed.entries:
         raise ParserError("DOU: RSS не вдалося розібрати")
 

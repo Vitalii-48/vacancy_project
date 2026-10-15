@@ -37,7 +37,7 @@ def get_available_sources() -> list[tuple[str, str]]:
     # order_by is required, otherwise distinct() does not remove duplicates.
     values = Vacancy.objects.order_by("source").values_list("source", flat=True).distinct()
     labels = dict(Vacancy.Source.choices)
-    return [(value, labels.get(value, value)) for value in values]
+    return [(value, labels.get(value, str(value))) for value in values]
 
 
 def get_last_run(source: str):

@@ -6,11 +6,13 @@ from decouple import config
 from jobs.exceptions import ParserError
 from jobs.filters import DEFAULT_DAYS, is_junior_level, is_python, is_recent
 
+JOOBLE_KEYWORDS = "Python developer"
+JOOBLE_LOCATION = "Remote"
 
 def fetch_joobl(
         api_key=None,
-        keywords="Junior Python developer",
-        location="Remote",
+        keywords=JOOBLE_KEYWORDS,
+        location=JOOBLE_LOCATION,
         days: int = DEFAULT_DAYS,
 ) -> list[dict]:
     """Return a list of good vacancies from Jooble."""
@@ -72,12 +74,12 @@ def fetch_joobl(
 if __name__ == "__main__":
     # Run this file directly to test the parser.
     print("Пошук вакансій на Jooble...")
-    jobs = fetch_joobl(api_key=config("JOOBLE_API_KEY"))
+    jobs_prt = fetch_joobl(api_key=config("JOOBLE_API_KEY"))
 
-    if not jobs:
+    if not jobs_prt:
         print("Нічого не знайдено за вашими критеріями.")
     else:
-        for i, job in enumerate(jobs, 1):
-            print(f"\n[{i}] {job['title']}")
-            print(f"Компанія: {job['company']}")
-            print(f"Посилання: {job['link']}")
+        for i, job_prt in enumerate(jobs_prt, 1):
+            print(f"\n[{i}] {job_prt['title']}")
+            print(f"Компанія: {job_prt['company']}")
+            print(f"Посилання: {job_prt['link']}")

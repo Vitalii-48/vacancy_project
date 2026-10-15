@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, date, time
+from datetime import datetime, timedelta, date
 
 # Vacancies older than this many days are ignored.
 DEFAULT_DAYS = 7
