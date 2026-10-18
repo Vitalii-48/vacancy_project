@@ -1,7 +1,7 @@
 # NOTE: disabled now, Cloudflare blocks this parser.
 
 import dateparser
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
 
 from jobs.constants import USER_AGENT
 from jobs.exceptions import ParserError
@@ -12,25 +12,30 @@ URL = "https://robota.ua/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
 
 REMOTE_KEYWORDS = ["дистанційно", "віддалено", "remote"]
 
+def _open_vacancy_list(browser: Browser) -> tuple[BrowserContext, Page]:
+    """Open the vacancies page and wait until the cards appear."""
+    context = browser.new_context(user_agent=USER_AGENT)
+    page = context.new_page()
+    page.goto(URL)
+
+    # Wait for vacancy cards. If they never appear, Cloudflare blocked us.
+    try:
+        page.wait_for_selector("a.new-design-card", timeout=20000)
+    except Exception as e:
+        raise ParserError(
+            "Robota: картки не знайдено (ймовірно, Cloudflare)"
+        ) from e
+    return context, page
+
 
 def fetch_robota() -> list[dict]:
     """Return a list of good vacancies from Robota.ua."""
     results = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         try:  # "finally" below always closes the browser
-            context = browser.new_context(user_agent=USER_AGENT)
-            page = context.new_page()
-            page.goto(URL)
-
-            # Wait for vacancy cards. If they never appear, Cloudflare blocked us.
-            try:
-                page.wait_for_selector("a.new-design-card", timeout=20000)
-            except Exception as e:
-                raise ParserError(
-                    "Robota: картки не знайдено (ймовірно, Cloudflare)"
-                ) from e
+            context, page = _open_vacancy_list(browser)
 
             cards = page.query_selector_all("a.new-design-card")
             # One extra tab is used to open every vacancy page.
@@ -87,6 +92,9 @@ def fetch_robota() -> list[dict]:
             browser.close()
 
     return results
+
+
+
 
 
 if __name__ == "__main__":
