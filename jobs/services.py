@@ -5,8 +5,8 @@ from datetime import timedelta
 from django.db import IntegrityError, connection, transaction
 from django.utils import timezone
 
+from .constants import DEFAULT_DAYS
 from .exceptions import ParseNotAllowed, ParserError
-from .filters import DEFAULT_DAYS
 from .models import ParseRun, UserVacancy, Vacancy
 from .parsers.registry import PARSERS
 

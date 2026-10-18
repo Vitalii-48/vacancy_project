@@ -3,10 +3,11 @@ from datetime import datetime
 import requests
 from decouple import config
 
+from jobs.constants import DEFAULT_DAYS
 from jobs.exceptions import ParserError
-from jobs.filters import DEFAULT_DAYS, is_junior_level, is_python, is_recent
+from jobs.filters import is_junior_level, is_python, is_recent
 
-JOOBLE_KEYWORDS = "Python developer"
+JOOBLE_KEYWORDS = "Python"
 JOOBLE_LOCATION = "Remote"
 
 def fetch_joobl(

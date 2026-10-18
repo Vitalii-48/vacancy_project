@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, date
 
-# Vacancies older than this many days are ignored.
-DEFAULT_DAYS = 7
+from jobs.constants import DEFAULT_DAYS
 
 # Words that mean "this job is for a beginner".
 JUNIOR_WORDS = {

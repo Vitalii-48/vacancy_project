@@ -5,16 +5,12 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.support.ui import WebDriverWait
 
+from jobs.constants import DEFAULT_DAYS, USER_AGENT
 from jobs.exceptions import ParserError
-from jobs.filters import DEFAULT_DAYS, is_junior_level, is_recent
+from jobs.filters import is_junior_level, is_recent
 
 # The address already filters: remote jobs, Python.
 URL = "https://www.work.ua/jobs-remote-python/"
-# Pretend to be a normal browser.
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-)
 
 
 def _get_page_html() -> str:

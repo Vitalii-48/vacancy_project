@@ -3,15 +3,13 @@
 import dateparser
 from playwright.sync_api import sync_playwright
 
+from jobs.constants import USER_AGENT
 from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
 # The address already filters: remote jobs, IT category.
-URL = "https://robota.ua/ua/zapros/junior-python-developer/ukraine/params;scheduleIds=3;rubrics=1"
-USER_AGENT = (
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-)
+URL = "https://robota.ua/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+
 REMOTE_KEYWORDS = ["дистанційно", "віддалено", "remote"]
 
 
@@ -20,7 +18,7 @@ def fetch_robota() -> list[dict]:
     results = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(headless=True)
         try:  # "finally" below always closes the browser
             context = browser.new_context(user_agent=USER_AGENT)
             page = context.new_page()
@@ -67,7 +65,7 @@ def fetch_robota() -> list[dict]:
                     job_page.wait_for_selector("#description-wrap", timeout=10000)
                     description = job_page.inner_text("#description-wrap").strip()
                 except Exception as e:
-                    print(f"⚠️ Не вдалося отримати опис: {link} ({e})")
+                    print(f" Не вдалося отримати опис: {link} ({e})")
                     continue
                 if "python" not in f"{title} {description}".lower():
                     continue

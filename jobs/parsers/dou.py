@@ -6,18 +6,14 @@ from urllib.parse import urlparse
 import feedparser
 import requests
 
+from jobs.constants import DEFAULT_DAYS, USER_AGENT
 from jobs.exceptions import ParserError
-from jobs.filters import DEFAULT_DAYS, is_junior_level, is_recent
+from jobs.filters import is_junior_level, is_recent
 
 # The site already filters: experience 1-3 years, remote, Python.
 URL = "https://jobs.dou.ua/vacancies/feeds/?exp=1-3&remote&category=Python"
 # DOU blocks the default "python-requests" name, so we look like a browser.
-HEADERS = {
-    "User-Agent": (
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-    )
-}
+HEADERS = {"User-Agent": USER_AGENT}
 
 
 def _company_from_link(link: str) -> str:
