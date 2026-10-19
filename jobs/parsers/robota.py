@@ -1,61 +1,82 @@
-# NOTE: disabled now, Cloudflare blocks this parser.
-
 import dateparser
-from playwright.sync_api import sync_playwright, Browser, BrowserContext, Page
+from playwright.sync_api import sync_playwright, Browser, BrowserContext, Locator, Page
+from playwright_stealth import Stealth
+from urllib.parse import urljoin
 
 from jobs.constants import USER_AGENT
 from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
+BASE_URL = "https://robota.ua"
 # The address already filters: remote jobs, IT category.
-URL = "https://robota.ua/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+URL = f"{BASE_URL}/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+
+# CSS selectors: the site can change them, so they all live here.
+VACANCY_CARD_SELECTOR = "a.new-design-card"
+TITLE_SELECTOR = "h2"
+COMPANY_SELECTOR = "span.santa-mr-20"
+DATE_SELECTOR = "div.santa-typo-secondary.santa-text-black-500"
+DESCRIPTION_SELECTOR = "#description-wrap"
 
 REMOTE_KEYWORDS = ["дистанційно", "віддалено", "remote"]
+
 
 def _open_vacancy_list(browser: Browser) -> tuple[BrowserContext, Page]:
     """Open the vacancies page and wait until the cards appear."""
     context = browser.new_context(user_agent=USER_AGENT)
     page = context.new_page()
-    page.goto(URL)
+
 
     # Wait for vacancy cards. If they never appear, Cloudflare blocked us.
     try:
-        page.wait_for_selector("a.new-design-card", timeout=20000)
+        page.goto(URL, wait_until="networkidle", timeout=30000)
+        page.wait_for_selector(VACANCY_CARD_SELECTOR, timeout=20000)
     except Exception as e:
+        context.close()
         raise ParserError(
             "Robota: картки не знайдено (ймовірно, Cloudflare)"
         ) from e
     return context, page
 
 
+def _text(card: Locator, selector: str) -> str:
+    """Text of the first element that matches the selector, or "" if there is none."""
+    found = card.locator(selector)
+    if found.count() == 0:  # count() does not wait: it answers at once
+        return ""
+    return found.first.inner_text().strip()
+
+
 def fetch_robota() -> list[dict]:
     """Return a list of good vacancies from Robota.ua."""
     results = []
 
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+    with Stealth().use_sync(sync_playwright()) as p:
+        browser = p.chromium.launch(headless=True)
         try:  # "finally" below always closes the browser
             context, page = _open_vacancy_list(browser)
 
-            cards = page.query_selector_all("a.new-design-card")
             # One extra tab is used to open every vacancy page.
             job_page = context.new_page()
 
-            for card in cards:
-                title_el = card.query_selector("h2")
-                if not title_el:
+            for card in page.locator(VACANCY_CARD_SELECTOR).all():
+                title = _text(card, TITLE_SELECTOR)
+                if not title:
                     continue  # not a real vacancy card
-                title = title_el.inner_text().strip()
-                link = "https://robota.ua" + (card.get_attribute("href") or "")
 
-                company_el = card.query_selector("span.santa-mr-20")
-                company = company_el.inner_text().strip() if company_el else "Невідомо"
+                href = card.get_attribute("href")
+                if not href:
+                    continue
+
+                link = urljoin(BASE_URL, href or "")
+
+                company = _text(card, COMPANY_SELECTOR) or "Невідомо"
 
                 # Read the date. Skip the card if there is no date.
-                time_el = card.query_selector("div.santa-typo-secondary.santa-text-black-500")
-                if not time_el:
+                date_text = _text(card, DATE_SELECTOR)
+                if not date_text:
                     continue
-                published = dateparser.parse(time_el.inner_text().strip(), languages=["uk"])
+                published = dateparser.parse(date_text, languages=["uk"])
                 if published is None:  # dateparser did not understand the text
                     continue
                 if not is_recent(published):
@@ -67,8 +88,8 @@ def fetch_robota() -> list[dict]:
                 # Open the vacancy page and look for "python" in the full text.
                 try:
                     job_page.goto(link)
-                    job_page.wait_for_selector("#description-wrap", timeout=10000)
-                    description = job_page.inner_text("#description-wrap").strip()
+                    job_page.wait_for_selector(DESCRIPTION_SELECTOR, timeout=10000)
+                    description = job_page.inner_text(DESCRIPTION_SELECTOR).strip()
                 except Exception as e:
                     print(f" Не вдалося отримати опис: {link} ({e})")
                     continue
@@ -92,9 +113,6 @@ def fetch_robota() -> list[dict]:
             browser.close()
 
     return results
-
-
-
 
 
 if __name__ == "__main__":
