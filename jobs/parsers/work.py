@@ -10,7 +10,15 @@ from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
 # The address already filters: remote jobs, Python.
-URL = "https://www.work.ua/jobs-remote-python/"
+WORK_BASE_URL = "https://www.work.ua"
+URL = f"{WORK_BASE_URL}/jobs-remote-python/"
+
+# CSS selectors
+VACANCY_CARD_SELECTOR = "div.job-link"
+TITLE_SELECTOR = "h2 a"
+TIME_SELECTOR = "time"
+SNIPPET_SELECTOR = "p.ellipsis"
+COMPANY_SELECTOR = "span.mr-xs span.strong-600"
 
 
 def _get_page_html() -> str:
@@ -25,7 +33,7 @@ def _get_page_html() -> str:
             driver.get(URL)
             # Wait up to 10 seconds until vacancy cards appear.
             WebDriverWait(driver, 10).until(
-                lambda d: d.find_elements("css selector", "div.job-link")
+                lambda d: d.find_elements("css selector", VACANCY_CARD_SELECTOR)
             )
             return driver.page_source
         finally:
@@ -41,7 +49,7 @@ def fetch_work(days: int = DEFAULT_DAYS) -> list[dict]:
     soup = BeautifulSoup(_get_page_html(), "html.parser")
 
     # Each vacancy is one "card" on the page.
-    cards = soup.select("div.job-link")
+    cards = soup.select(VACANCY_CARD_SELECTOR)
     if not cards:
         raise ParserError("Work.ua: картки не знайдено (змінилась верстка?)")
 
@@ -49,10 +57,10 @@ def fetch_work(days: int = DEFAULT_DAYS) -> list[dict]:
 
     for card in cards:
         # Find the parts of the card.
-        title_tag = card.select_one("h2 a")
-        time_tag = card.select_one("time")
-        snippet_tag = card.select_one("p.ellipsis")
-        company_tag = card.select_one("span.mr-xs span.strong-600")
+        title_tag = card.select_one(TITLE_SELECTOR)
+        time_tag = card.select_one(TIME_SELECTOR)
+        snippet_tag = card.select_one(SNIPPET_SELECTOR)
+        company_tag = card.select_one(COMPANY_SELECTOR)
 
         if not title_tag or not time_tag:
             continue  # not a real vacancy card

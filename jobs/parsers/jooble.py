@@ -7,8 +7,22 @@ from jobs.constants import DEFAULT_DAYS
 from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_python, is_recent
 
+# Configuration constants and API
+JOOBLE_BASE_URL = "https://ua.jooble.org/api"
+NETWORK_TIMEOUT = 15
+
+# Default search settings
 JOOBLE_KEYWORDS = "Python"
 JOOBLE_LOCATION = "Remote"
+
+# Jooble API JSON response keys
+API_JOBS_KEY = "jobs"
+API_TITLE_KEY = "title"
+API_SNIPPET_KEY = "snippet"
+API_LINK_KEY = "link"
+API_UPDATED_KEY = "updated"
+API_COMPANY_KEY = "company"
+
 
 def fetch_joobl(
         api_key=None,
@@ -22,12 +36,12 @@ def fetch_joobl(
         from django.conf import settings
         api_key = settings.JOOBLE_API_KEY
 
-    url = f"https://ua.jooble.org/api/{api_key}"
+    url = f"{JOOBLE_BASE_URL}/{api_key}"
     payload = {"keywords": keywords, "location": location}
 
     # Ask the API. Any problem becomes a ParserError.
     try:
-        response = requests.post(url, json=payload, timeout=15)
+        response = requests.post(url, json=payload, timeout=NETWORK_TIMEOUT)
         response.raise_for_status()
         jobs = response.json().get("jobs", [])
     except (requests.RequestException, ValueError):
@@ -38,10 +52,10 @@ def fetch_joobl(
 
     for job in jobs:
         # .get() does not crash if a field is missing.
-        title = job.get("title", "").strip()
-        snippet = job.get("snippet", "")
-        link = job.get("link", "")
-        updated = job.get("updated", "")
+        title = job.get(API_TITLE_KEY, "").strip()
+        snippet = job.get(API_SNIPPET_KEY, "")
+        link = job.get(API_LINK_KEY, "")
+        updated = job.get(API_UPDATED_KEY, "")
 
         if not title or not link:
             continue  # skip broken records
@@ -64,7 +78,7 @@ def fetch_joobl(
             {
                 "title": title,
                 "link": link,
-                "company": job.get("company") or "Невідомо",
+                "company": job.get(API_COMPANY_KEY) or "Невідомо",
                 "location": "Віддалено",
             }
         )

@@ -7,9 +7,9 @@ from jobs.constants import USER_AGENT
 from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
-BASE_URL = "https://robota.ua"
+ROBOTA_BASE_URL = "https://robota.ua"
 # The address already filters: remote jobs, IT category.
-URL = f"{BASE_URL}/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+URL = f"{ROBOTA_BASE_URL}/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
 
 # CSS selectors: the site can change them, so they all live here.
 VACANCY_CARD_SELECTOR = "a.new-design-card"
@@ -68,7 +68,7 @@ def fetch_robota() -> list[dict]:
                 if not href:
                     continue
 
-                link = urljoin(BASE_URL, href or "")
+                link = urljoin(ROBOTA_BASE_URL, href or "")
 
                 company = _text(card, COMPANY_SELECTOR) or "Невідомо"
 

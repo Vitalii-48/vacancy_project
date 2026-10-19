@@ -11,9 +11,17 @@ from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
 # The site already filters: experience 1-3 years, remote, Python.
-URL = "https://jobs.dou.ua/vacancies/feeds/?exp=1-3&remote&category=Python"
-# DOU blocks the default "python-requests" name, so we look like a browser.
+DOU_BASE_URL = "https://jobs.dou.ua"
+URL = f"{DOU_BASE_URL}/vacancies/feeds/?exp=1-3&remote&category=Python"# DOU blocks the default "python-requests" name, so we look like a browser.
 HEADERS = {"User-Agent": USER_AGENT}
+NETWORK_TIMEOUT = 15
+
+# Marker constants and RSS-keys
+RSS_TITLE_KEY = "title"
+RSS_LINK_KEY = "link"
+RSS_PUBLISHED_KEY = "published"
+
+COMPANY_SPLIT_MARKER = " в "
 
 
 def _company_from_link(link: str) -> str:
@@ -34,7 +42,7 @@ def fetch_dou_rss(days: int = DEFAULT_DAYS) -> list[dict]:
     """Return a list of good vacancies from DOU.ua."""
     # Download the feed. Any network problem becomes a ParserError.
     try:
-        response = requests.get(URL, headers=HEADERS, timeout=15)
+        response = requests.get(URL, headers=HEADERS, timeout=NETWORK_TIMEOUT)
         response.raise_for_status()
     except requests.RequestException as e:
         raise ParserError("DOU: не вдалося отримати RSS") from e
@@ -48,13 +56,13 @@ def fetch_dou_rss(days: int = DEFAULT_DAYS) -> list[dict]:
 
     for entry in feed.entries:
         # The title looks like "Job name в Company": cut only the end part.
-        title = html.unescape(entry.get("title", "").rsplit(" в ", 1)[0]).strip()
-        link = entry.get("link", "")
+        title = html.unescape(entry.get(RSS_TITLE_KEY, "").rsplit(COMPANY_SPLIT_MARKER, 1)[0]).strip()
+        link = entry.get(RSS_LINK_KEY, "")
         if not title or not link:
             continue  # skip broken entries
 
         # Skip vacancies with a broken or old date.
-        published = _parse_date(entry.get("published", ""))
+        published = _parse_date(entry.get(RSS_PUBLISHED_KEY, ""))
         if published is None or not is_recent(published,days):
             continue
 
