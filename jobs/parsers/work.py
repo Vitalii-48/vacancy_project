@@ -10,8 +10,7 @@ from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
 # The address already filters: remote jobs, Python.
-WORK_BASE_URL = "https://www.work.ua"
-URL = f"{WORK_BASE_URL}/jobs-remote-python/"
+URL = f"https://www.work.ua/jobs-remote-python/"
 
 # CSS selectors
 VACANCY_CARD_SELECTOR = "div.job-link"

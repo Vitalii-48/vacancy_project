@@ -142,7 +142,8 @@ vacancy_project/
 │   ├── views.py                # Vacancy list, status buttons, parse buttons
 │   ├── management/commands/
 │   │   ├── run_all.py          # Run all parsers
-│   │   └── run_bot.py          # Run the Telegram bot
+│   │   ├── run_bot.py          # Run the Telegram bot
+│   │   └── run_robota.py       # Run the Robota.ua parser
 │   ├── migrations/             # Database migrations (keep them in git)
 │   └── parsers/
 │       ├── registry.py         # source -> parser
@@ -182,7 +183,8 @@ vacancy_project/
 
 ##  Known limits
 
-- **Robota.ua is disabled.** Cloudflare asks "confirm you are human" and blocks the automatic browser.
+- **Robota.ua is disabled.** runs only by hand on a local machine (python manage.py run_robota), 
+  because Cloudflare blocks it unreliably and Render has no browser.
 - **Indeed** has a parser file, but it is not connected.
 - **Work.ua needs Chrome.** It is usually not installed on Render, so there this parser reports an error 
     and the other sources still work.

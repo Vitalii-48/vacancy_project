@@ -1,15 +1,17 @@
 import dateparser
 from playwright.sync_api import sync_playwright, Browser, BrowserContext, Locator, Page
 from playwright_stealth import Stealth
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from jobs.constants import USER_AGENT
 from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
-ROBOTA_BASE_URL = "https://robota.ua"
+
 # The address already filters: remote jobs, IT category.
-URL = f"{ROBOTA_BASE_URL}/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+URL = f"https://robota.ua/zapros/python/ukraine/params;scheduleIds=3;rubrics=1"
+parsed_url = urlparse(URL)
+ROBOTA_BASE_URL = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
 # CSS selectors: the site can change them, so they all live here.
 VACANCY_CARD_SELECTOR = "a.new-design-card"
@@ -52,7 +54,7 @@ def fetch_robota() -> list[dict]:
     results = []
 
     with Stealth().use_sync(sync_playwright()) as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         try:  # "finally" below always closes the browser
             context, page = _open_vacancy_list(browser)
 
@@ -68,7 +70,7 @@ def fetch_robota() -> list[dict]:
                 if not href:
                     continue
 
-                link = urljoin(ROBOTA_BASE_URL, href or "")
+                link = urljoin(ROBOTA_BASE_URL, href)
 
                 company = _text(card, COMPANY_SELECTOR) or "Невідомо"
 

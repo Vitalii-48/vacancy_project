@@ -11,8 +11,7 @@ from jobs.exceptions import ParserError
 from jobs.filters import is_junior_level, is_recent
 
 # The site already filters: experience 1-3 years, remote, Python.
-DOU_BASE_URL = "https://jobs.dou.ua"
-URL = f"{DOU_BASE_URL}/vacancies/feeds/?exp=1-3&remote&category=Python"# DOU blocks the default "python-requests" name, so we look like a browser.
+URL = f"https://jobs.dou.ua/vacancies/feeds/?exp=1-3&remote&category=Python"# DOU blocks the default "python-requests" name, so we look like a browser.
 HEADERS = {"User-Agent": USER_AGENT}
 NETWORK_TIMEOUT = 15
 
