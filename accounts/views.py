@@ -11,7 +11,7 @@ def register(request):
     form = RegisterForm(request.POST or None)
     if request.method == "POST" and form.is_valid():
         user = form.save()
-        login(request, user)  # після реєстрації одразу входимо
+        login(request, user)
         return redirect("home")
 
     return render(request, "accounts/register.html", {"form": form})

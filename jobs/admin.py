@@ -26,19 +26,19 @@ class CustomUserAdmin(UserAdmin):
         # Count related rows in ONE query instead of one query per user.
         # distinct=True is required: several joins would multiply the counts.
         return super().get_queryset(request).annotate(
-            _applied=Count("vacancy_states", filter=Q(vacancy_states__applied=True), distinct=True),
-            _irrelevant=Count("vacancy_states", filter=Q(vacancy_states__is_irrelevant=True), distinct=True),
-            _runs=Count("parse_runs", distinct=True),
+            applied=Count("vacancy_states", filter=Q(vacancy_states__applied=True), distinct=True),
+            irrelevant=Count("vacancy_states", filter=Q(vacancy_states__is_irrelevant=True), distinct=True),
+            runs=Count("parse_runs", distinct=True),
         )
 
     @admin.display(description="Відгуків", ordering="_applied")
     def applied_count(self, obj):
-        return obj._applied
+        return obj.applied
 
     @admin.display(description="Нерелевантних", ordering="_irrelevant")
     def irrelevant_count(self, obj):
-        return obj._irrelevant
+        return obj.irrelevant
 
     @admin.display(description="Запусків парсингу", ordering="_runs")
     def runs_count(self, obj):
-        return obj._runs
+        return obj.runs
