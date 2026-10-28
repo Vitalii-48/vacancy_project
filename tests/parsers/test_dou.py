@@ -6,12 +6,9 @@ import pytest
 import requests
 
 from jobs.exceptions import ParserError
-
-
 from jobs.parsers.dou import _company_from_link, _parse_date, fetch_dou_rss
 from jobs.parsers import dou
 
-published = format_datetime(datetime.now(timezone.utc))
 
 class TestCompanyFromLink:
     def test_returns_company_from_link(self):
@@ -32,27 +29,52 @@ class TestParseDate:
 
 
 class TestFetchDouRss:
-    def make_response(self, text: str):
+    @staticmethod
+    def make_response(text: str):
         response = Mock()
         response.content = text.encode('utf-8')
         return response
 
+    @staticmethod
+    def make_rss_item(
+        title="Junior Python Developer в Miteyda, віддалено",
+        link="https://jobs.dou.ua/companies/miteyda/vacancies/374997/?utm_source=jobsrss",
+        published_date=None,
+    ) -> str:
+        if published_date is None:
+            published_date = format_datetime(datetime.now(timezone.utc))
+        return f"""
+            <item>
+                <title>{title}</title>
+                <link>{link}</link>
+                <pubDate>{published_date}</pubDate>
+            </item>
+        """
+
+    @staticmethod
+    def make_rss_feed(items_xml: str = "") -> str:
+        return f"""<?xml version="1.0"?>
+        <rss version="2.0">
+            <channel>
+                <title>DOU Vacancies</title>
+                <link>https://jobs.dou.ua</link>
+                {items_xml}
+            </channel>
+        </rss>"""
+
     def test_returns_empty_list_when_feed_has_no_vacancies(self, monkeypatch):
-        text = '<?xml version="1.0"?><rss version="2.0"><channel></channel></rss>'
+        text = self.make_rss_feed()
         response = self.make_response(text)
         monkeypatch.setattr(dou.requests, "get", Mock(return_value=response))
         assert fetch_dou_rss() == []
 
-    def fake_requests_get_with_vacancy(self, *_args, **_kwargs):
-        text = f"""<rss version="2.0"><channel> <item>
-                <title>Junior Python Developer в Miteyda, віддалено</title>
-                <link>https://jobs.dou.ua/companies/miteyda/vacancies/374997/?utm_source=jobsrss</link>
-                <pubDate>{published}</pubDate>
-                </item></channel></rss>"""
-        return self.make_response(text)
-
     def test_returns_vacancies_when_feed_has_vacancies(self, monkeypatch):
-        monkeypatch.setattr(dou.requests, "get", self.fake_requests_get_with_vacancy)
+        item = self.make_rss_item()
+        text = self.make_rss_feed(item)
+        response = self.make_response(text)
+
+        monkeypatch.setattr(dou.requests, "get", Mock(return_value=response))
+
         result = fetch_dou_rss()
         assert len(result) == 1
         assert result[0]["title"] == "Junior Python Developer"
@@ -60,19 +82,18 @@ class TestFetchDouRss:
         assert result[0]["link"] == "https://jobs.dou.ua/companies/miteyda/vacancies/374997/?utm_source=jobsrss"
         assert result[0]["location"] == "Віддалено"
 
-    def fake_requests_get_error_for_feed(self, *_args, **_kwargs):
-        text = 'this is not xml'
-        return self.make_response(text)
 
     def test_raises_parser_error_when_invalid_feed(self, monkeypatch):
-        monkeypatch.setattr(dou.requests, "get", self.fake_requests_get_error_for_feed)
+        response = self.make_response("this is not xml")
+        monkeypatch.setattr(dou.requests, "get", Mock(return_value=response))
         with pytest.raises(ParserError):
             fetch_dou_rss()
 
-    def fake_requests_get_error(self, *args, **kwargs):
-        raise requests.RequestException("Network error")
 
     def test_raises_parser_error_when_network_fails(self, monkeypatch):
-        monkeypatch.setattr(dou.requests, "get", self.fake_requests_get_error)
+        def fake_requests_get_error(*_args, **_kwargs):
+            raise requests.RequestException("Network error")
+
+        monkeypatch.setattr(dou.requests, "get", fake_requests_get_error)
         with pytest.raises(ParserError):
             fetch_dou_rss()
