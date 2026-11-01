@@ -100,6 +100,27 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 
 ---
 
+##  Tests
+
+Tests use `pytest` and `pytest-django`. They need no internet, browser or real database:
+parsers get fake responses, and the database is a temporary SQLite in memory
+(`vacancy_project/settings_test.py`).
+
+```bash
+pip install -r requirements-dev.txt
+python -m pytest
+```
+
+A `.env` file must exist (see `.env.example`), because the test settings reuse the normal settings.
+
+| Area | Files |
+|---|---|
+| Filters (junior level, Python, date) | `tests/test_filters.py` |
+| Parsers (DOU, Jooble, Work.ua) | `tests/parsers/` |
+| Services (save vacancies, statuses, start parsing, pause, guest rules) | `tests/test_services.py` |
+
+---
+
 ##  Architecture
 
 Each layer does one job:
@@ -109,7 +130,7 @@ Each layer does one job:
 | Parsers | `jobs/parsers/*.py` | Get raw vacancies from a site. They never write to the database. |
 | Registry | `jobs/parsers/registry.py` | One place that maps a source to its parser. |
 | Filters | `jobs/filters.py` | Shared rules: how old, junior or not, Python or not. |
-| Selectors | `jobs/selectors.py` | Read data from the database. |
+| Queries | `jobs/queries.py` | Read data from the database. |
 | Services | `jobs/services.py` | Change data: save vacancies, set statuses, start parsing. Uses transactions. |
 | Models | `jobs/models.py` | `Vacancy`, `UserVacancy`, `ParseRun`. |
 | Views | `jobs/views.py`, `accounts/views.py` | Take a request, return a page. They contain no business logic. |
@@ -135,7 +156,7 @@ vacancy_project/
 ├── jobs/                       # Vacancies
 │   ├── admin.py                # Admin: vacancies, parse runs
 │   ├── models.py               # Vacancy, UserVacancy, ParseRun
-│   ├── selectors.py            # Read queries
+│   ├── queries.py              # Read queries
 │   ├── services.py             # Save vacancies, statuses, start parsing
 │   ├── filters.py              # Shared filter rules
 │   ├── exceptions.py           # ParserError, ParseNotAllowed
@@ -161,6 +182,11 @@ vacancy_project/
 ├── telegram_bot/
 │   └── bot.py
 │
+├── tests/                      # pytest tests
+│   ├── parsers/                # DOU, Jooble, Work.ua
+│   ├── test_filters.py
+│   └── test_services.py
+│
 ├── templates/
 │   ├── base.html
 │   ├── jobs/vacancy_list.html
@@ -169,12 +195,15 @@ vacancy_project/
 │
 ├── vacancy_project/            # Django project configuration
 │   ├── settings.py
+│   ├── settings_test.py        # Settings for tests (SQLite in memory)
 │   ├── urls.py
 │   └── wsgi.py
 │
 ├── .env                        # Real secrets (not in git)
 ├── .env.example                # Placeholder secrets values
 ├── manage.py
+├── pytest.ini                  # pytest settings
+├── requirements-dev.txt        # Packages for tests
 ├── Procfile                    # Start command for Heroku-style hosts (Render uses its own Start Command)
 └── README.md
 ```
@@ -199,7 +228,7 @@ vacancy_project/
 
 - Parsing options: how many last days, keyword.
 - Users in the admin panel with editing.
-- Tests and GitHub Actions.
+- Tests for views and permissions; GitHub Actions to run tests on every commit.
 - Telegram bot on personal statuses.
 - AI helper that checks how well a vacancy matches.
 
