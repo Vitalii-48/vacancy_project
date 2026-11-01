@@ -8,7 +8,7 @@ from django.views.decorators.http import require_POST
 
 from .exceptions import ParseNotAllowed
 from .models import Vacancy
-from .selectors import VALID_STATUSES, get_available_sources, get_last_run, get_vacancies
+from .queries import VALID_STATUSES, get_available_sources, get_last_run, get_vacancies
 from .services import DEFAULT_PERIOD, PERIODS, STATUS_FIELDS, set_vacancy_status, start_parse, start_parse_all
 
 
