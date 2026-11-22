@@ -6,6 +6,8 @@ venv/
 .vscode/
 .idea/
 
+staticfiles/
+
 # Секрети та середовище
 .env
 
