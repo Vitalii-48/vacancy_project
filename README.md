@@ -236,7 +236,7 @@ vacancy_project/
 
 ##  Deployment (Render, free plan)
 
-The site runs as a Render **Web Service** on the free plan. It is connected to this GitHub repository (branch `master`). 
+The site runs as a Render **Web Service** on the free plan. It is connected to this GitHub repository (branch `main`). 
 Every commit starts a new deploy automatically (Auto-Deploy: On Commit).
 
 ### Service settings
